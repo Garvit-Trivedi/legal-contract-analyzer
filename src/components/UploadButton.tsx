@@ -4,12 +4,21 @@ import React, { useRef, useState } from "react";
 import { processUploadedDocument } from "@/lib/document/actions";
 
 interface UploadButtonProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   onUploadStart?: () => void;
+  /** Called when upload + processing succeeds. Receives the new documentId. */
+  onUploadSuccess?: (documentId: string) => void;
+  onUploadError?: (message: string) => void;
 }
 
-export function UploadButton({ children, className, onUploadStart }: UploadButtonProps) {
+export function UploadButton({
+  children,
+  className,
+  onUploadStart,
+  onUploadSuccess,
+  onUploadError,
+}: UploadButtonProps) {
   const [status, setStatus] = useState<"idle" | "uploading" | "failed">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -18,25 +27,28 @@ export function UploadButton({ children, className, onUploadStart }: UploadButto
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const extension = file.name.split('.').pop()?.toLowerCase() || "";
-    // Allow any standard MIME if extensions strictly match, since edge case browsers misreport MIME heavily 
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
     const isValidPdf = extension === "pdf";
     const isValidDocx = extension === "docx";
     const isValidTxt = extension === "txt";
 
     if (!isValidPdf && !isValidDocx && !isValidTxt) {
       setStatus("failed");
-      setErrorMsg(`Unsupported file type: ${file.name}`);
+      const msg = `Unsupported file type: ${file.name}`;
+      setErrorMsg(msg);
+      onUploadError?.(msg);
       return;
     }
 
     if (file.size > 50 * 1024 * 1024) {
       setStatus("failed");
-      setErrorMsg("File exceeds 50MB limit.");
+      const msg = "File exceeds 50MB limit.";
+      setErrorMsg(msg);
+      onUploadError?.(msg);
       return;
     }
 
-    if (onUploadStart) onUploadStart();
+    onUploadStart?.();
     setStatus("uploading");
     setErrorMsg("");
 
@@ -47,16 +59,21 @@ export function UploadButton({ children, className, onUploadStart }: UploadButto
       const result = await processUploadedDocument(formData);
       if (result.success) {
         setStatus("idle");
+        onUploadSuccess?.(result.documentId ?? "");
       } else {
         setStatus("failed");
-        setErrorMsg(result.error || "Processing failed.");
+        const msg = result.error || "Processing failed.";
+        setErrorMsg(msg);
+        onUploadError?.(msg);
       }
     } catch (err: any) {
       setStatus("failed");
-      setErrorMsg(err.message || "Upload failed.");
+      const msg = err.message || "Upload failed.";
+      setErrorMsg(msg);
+      onUploadError?.(msg);
     }
 
-    // Reset input
+    // Reset so same file can be uploaded again
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -80,7 +97,7 @@ export function UploadButton({ children, className, onUploadStart }: UploadButto
       </button>
 
       {status === "failed" && errorMsg && (
-        <div className="text-red-500 text-xs text-center border border-red-200 bg-red-50 p-2 rounded w-full">
+        <div className="text-red-400 text-xs text-center border border-red-500/20 bg-red-500/10 p-2 rounded w-full">
           {errorMsg}
         </div>
       )}

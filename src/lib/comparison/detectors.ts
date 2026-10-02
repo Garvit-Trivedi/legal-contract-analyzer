@@ -18,10 +18,6 @@ export interface DetectedMoney {
   offset: number;
 }
 
-// Matches: $1,000 | USD 1,000 | 1,000 USD | €50,000 | £10,000
-const MONEY_RE =
-  /(?<prefix>(?:USD|EUR|GBP|CAD|AUD|CHF|JPY|CNY|INR)\s+)?(?<sym>[$€£¥₹])?\s*(?<num>\d{1,3}(?:,\d{3})*(?:\.\d{1,4})?|\d+(?:\.\d{1,4})?)(?:\s*(?<suffix>(?:USD|EUR|GBP|CAD|AUD|CHF|JPY|CNY|INR)|(?:thousand|million|billion)))?/gi;
-
 function parseMoney(raw: string, currency: string): number {
   const cleaned = raw.replace(/,/g, "").replace(/[^0-9.]/g, "");
   const num = parseFloat(cleaned);
@@ -32,29 +28,45 @@ function parseMoney(raw: string, currency: string): number {
   return num;
 }
 
+/**
+ * Detect monetary values in text using positional-group regexes (ES2017 compatible).
+ * Patterns:
+ *  - $100,000 | €50,000 | £10,000
+ *  - USD 100,000 | EUR 100,000
+ *  - 100,000 USD | 100,000 million
+ */
 export function detectMoneyValues(text: string): DetectedMoney[] {
   const results: DetectedMoney[] = [];
-  let match: RegExpExecArray | null;
-  const re = new RegExp(MONEY_RE.source, "gi");
 
-  while ((match = re.exec(text)) !== null) {
-    const groups = match.groups || {};
-    const sym = (groups.prefix || groups.sym || "").trim();
-    const suffix = (groups.suffix || "").trim();
-    const numStr = groups.num || "";
+  // Pattern 1: Optional currency code, then symbol, then number, then optional suffix
+  // Groups: [1]=currencyCode, [2]=symbol, [3]=number, [4]=suffix
+  const pattern1 =
+    /((?:USD|EUR|GBP|CAD|AUD|CHF|JPY|CNY|INR)\s+)?([$€£¥₹])?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,4})?|\d+(?:\.\d{1,4})?)(?:\s*(USD|EUR|GBP|CAD|AUD|CHF|JPY|CNY|INR|thousand|million|billion))?/gi;
+
+  let m: RegExpExecArray | null;
+  while ((m = pattern1.exec(text)) !== null) {
+    const currencyCode = (m[1] || "").trim();
+    const sym = (m[2] || "").trim();
+    const numStr = (m[3] || "").trim();
+    const suffix = (m[4] || "").trim();
+
     if (!numStr) continue;
 
-    const value = parseMoney(numStr, suffix || sym);
-    // Skip tiny incidental numbers that have no currency marker
-    if (!sym && !suffix && value < 1) continue;
-    // Must have some currency indication unless >= 100
-    if (!sym && !suffix && !groups.prefix && value < 100) continue;
-    const currency = groups.prefix?.trim() || sym || suffix || "?";
+    const value = parseMoney(numStr, suffix || sym || currencyCode);
+
+    // Must have some currency indicator to avoid false positives
+    if (!sym && !suffix && !currencyCode) {
+      if (value < 100) continue;
+    }
+    if (!sym && !suffix && !currencyCode && value < 1000) continue;
+
+    const currency = currencyCode || sym || suffix || "?";
+
     results.push({
-      raw: match[0].trim(),
+      raw: m[0].trim(),
       value,
       currency,
-      offset: match.index,
+      offset: m.index,
     });
   }
 

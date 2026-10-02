@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UploadSidebarButton } from "./UploadSidebarButton";
 
 export function GlobalSidebar() {
   const pathname = usePathname();
@@ -23,9 +22,6 @@ export function GlobalSidebar() {
       </div>
 
       <div className="p-4 flex flex-col gap-1 flex-1 overflow-y-auto">
-        <div className="mb-4">
-          <UploadSidebarButton />
-        </div>
 
         <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest pl-3 mb-2 mt-2">Workspace</p>
         <SidebarLink href="/" icon="dashboard" label="Dashboard" active={pathname === "/"} />
