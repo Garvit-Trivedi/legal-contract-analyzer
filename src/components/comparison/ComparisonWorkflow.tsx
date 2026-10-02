@@ -159,7 +159,6 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
   const [docA, setDocA] = useState<string | null>(null);
   const [docB, setDocB] = useState<string | null>(null);
   const [mode, setMode] = useState<"select" | "loading" | "compare">("select");
-  const [activeCitation, setActiveCitation] = useState<any | null>(null);
 
   const aName = documents.find((d) => d.id === docA)?.filename || "Document A";
   const bName = documents.find((d) => d.id === docB)?.filename || "Document B";
@@ -325,28 +324,16 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
 
       {mode === "compare" && (
         <main className="flex-1 flex overflow-hidden">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative flex flex-col min-h-0 min-w-0">
             {docA && docB && (
               <ComparisonView
                 documentAId={docA}
                 documentBId={docB}
                 documentAName={aName}
                 documentBName={bName}
-                onCitationClick={(cit) => setActiveCitation(cit)}
               />
             )}
           </div>
-
-          {activeCitation && (
-            <div className="w-[450px] flex-shrink-0 bg-[#0f0f11] border-l border-white/10 z-20 relative">
-              <DocumentViewer
-                documentId={activeCitation.documentId}
-                characterStart={activeCitation.characterStart}
-                characterEnd={activeCitation.characterEnd}
-                onClose={() => setActiveCitation(null)}
-              />
-            </div>
-          )}
         </main>
       )}
     </div>

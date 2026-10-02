@@ -19,6 +19,7 @@ export function ChatWindow({
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [useResearchMode, setUseResearchMode] = useState(false);
   const [activeConvId, setActiveConvId] = useState<string | null>(conversationId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,7 +53,8 @@ export function ChatWindow({
       const assistantId = "assistant-" + Date.now().toString();
       setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantId, loading: true }]);
 
-      const res = await fetch("/api/chat", {
+      const endpoint = useResearchMode ? "/api/research" : "/api/chat";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -92,7 +94,13 @@ export function ChatWindow({
             if (!line.trim()) continue;
             try {
               const data = JSON.parse(line);
-              if (data.type === 'text') {
+              
+              if (data.type === 'init') {
+                if (!activeConvId && data.conversationId) {
+                  setActiveConvId(data.conversationId);
+                  onConversationCreated(data.conversationId);
+                }
+              } else if (data.type === 'text') {
                 textBuffer += data.content;
                 setMessages(prev => prev.map(m => 
                   m.id === assistantId ? { ...m, content: textBuffer, loading: false } : m
@@ -103,12 +111,22 @@ export function ChatWindow({
                   onConversationCreated(data.conversationId);
                 }
                 setMessages(prev => prev.map(m => 
-                  m.id === assistantId ? { ...m, citations: data.citations } : m
+                  m.id === assistantId ? { 
+                    ...m, 
+                    content: data.text || textBuffer, 
+                    citations: data.citations,
+                    timeline: [...(m.timeline || []), { type: 'research_completed' }]
+                  } : m
                 ));
               } else if (data.type === 'error') {
                 console.error("API error:", data.error);
                 setMessages(prev => prev.map(m => 
                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+                ));
+              } else if (['research_started', 'agent_thinking', 'tool_call', 'tool_result', 'research_round', 'research_completed', 'tool_limit_reached'].includes(data.type)) {
+                // Agent event
+                setMessages(prev => prev.map(m => 
+                  m.id === assistantId ? { ...m, timeline: [...(m.timeline || []), data] } : m
                 ));
               }
             } catch (e) {
@@ -237,15 +255,47 @@ export function ChatWindow({
                     </div>
                     {/* Message body — no card border, just good prose */}
                     <div className="pl-7">
+                      {/* Timeline Area (if agentic) */}
+                      {msg.timeline && msg.timeline.length > 0 && (
+                        <div className="mb-3 space-y-1.5 border-l-2 border-white/5 pl-3 py-1">
+                          {msg.timeline.map((event: any, idx: number) => {
+                            if (event.type === 'research_started') return <div key={idx} className="text-xs text-zinc-500 font-mono">Initializing research agent...</div>;
+                            if (event.type === 'research_round') return <div key={idx} className="text-xs text-blue-500/80 font-mono mt-1">Starting Round {event.round}...</div>;
+                            if (event.type === 'agent_thinking') return <div key={idx} className="text-[11px] text-zinc-500">Agent is contemplating next steps...</div>;
+                            if (event.type === 'tool_call') {
+                              return (
+                                <div key={idx} className="text-[11px] text-emerald-500/90 flex items-center gap-1.5">
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                  {event.tool === 'search_document' ? `Searching context for "${event.query}"...` : (event.tool === 'get_section' ? `Retrieving section ${event.chunkId}...` : `Invoking ${event.tool}...`)}
+                                </div>
+                              );
+                            }
+                            if (event.type === 'tool_result') {
+                              return <div key={idx} className="text-[11px] text-zinc-400 pl-4">Found {event.resultCount} relevant matches.</div>;
+                            }
+                            if (event.type === 'tool_limit_reached') {
+                              return (
+                                <div key={idx} className="text-[11px] text-amber-400/90 flex items-center gap-1.5 mt-1">
+                                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                  {event.message || "Maximum tool calls reached. Generating answer from collected evidence."}
+                                </div>
+                              );
+                            }
+                            if (event.type === 'research_completed') return <div key={idx} className="text-xs text-zinc-500 font-mono mt-1">Research phase complete. Synthesizing answer...</div>;
+                            return null;
+                          })}
+                        </div>
+                      )}
+
                       <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
-                        {msg.content || (msg.loading && (
+                        {msg.content || (msg.loading && (!msg.timeline || msg.timeline.length === 0) && (
                           <span className="flex items-center gap-2 text-zinc-500">
                             <span className="inline-flex gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '0ms' }}></span>
                               <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '150ms' }}></span>
                               <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '300ms' }}></span>
                             </span>
-                            Searching document…
+                            Generating response…
                           </span>
                         ))}
                       </div>
@@ -296,6 +346,24 @@ export function ChatWindow({
 
       {/* Input Area */}
       <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-gradient-to-t from-[#09090b] via-[#09090b] to-transparent">
+        
+        {/* Agentic Research Toggle */}
+        <div className="flex items-center justify-end mb-2 mr-1">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <span className={`text-[10px] font-semibold tracking-wide uppercase transition-colors ${useResearchMode ? 'text-blue-400' : 'text-zinc-600 group-hover:text-zinc-400'}`}>Deep Research Mode</span>
+            <div className={`relative w-8 h-4 rounded-full transition-colors ${useResearchMode ? 'bg-blue-600/50 border border-blue-500/50' : 'bg-zinc-800 border border-white/10'}`}>
+               <div className={`absolute top-[1px] w-3 h-3 rounded-full transition-transform ${useResearchMode ? 'bg-blue-400 translate-x-[15px]' : 'bg-zinc-500 translate-x-[2px]'}`}></div>
+            </div>
+            <input 
+              type="checkbox" 
+              className="sr-only" 
+              checked={useResearchMode} 
+              onChange={(e) => setUseResearchMode(e.target.checked)} 
+              disabled={isLoading}
+            />
+          </label>
+        </div>
+
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
           <textarea
             disabled={isLoading}

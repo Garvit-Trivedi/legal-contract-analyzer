@@ -9,6 +9,9 @@ interface DocumentViewerProps {
   characterEnd?: number | null;
   onClose?: () => void;
   totalPages?: number | null;
+  highlightColor?: "amber" | "emerald" | "rose";
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+  scrollContainerRef?: React.Ref<HTMLDivElement>;
 }
 
 export function DocumentViewer({ 
@@ -17,6 +20,9 @@ export function DocumentViewer({
   characterEnd,
   onClose,
   totalPages,
+  highlightColor = "amber",
+  onScroll,
+  scrollContainerRef,
 }: DocumentViewerProps) {
   const [text, setText] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -87,12 +93,25 @@ export function DocumentViewer({
     if (characterStart != null && characterEnd != null &&
         characterStart >= 0 && characterEnd <= text.length && characterEnd > characterStart) {
 
+      // Determine highlight classes based on highlightColor prop
+      let hlBg = "bg-amber-500/25";
+      let hlBorder = "border-amber-500/50";
+      if (highlightColor === "emerald") {
+        hlBg = "bg-emerald-500/25";
+        hlBorder = "border-emerald-500/50";
+      } else if (highlightColor === "rose") {
+        hlBg = "bg-rose-500/25";
+        hlBorder = "border-rose-500/50";
+      }
+      
+      const citeClass = `citation-highlight text-zinc-100 ${hlBg} border-b-2 ${hlBorder} rounded-[2px] transition-all px-0.5`;
+
       // Also apply search highlights within segments
       const segments: React.ReactNode[] = [];
       const addSegment = (chunk: string, isCitation: boolean, keyPfx: string) => {
         if (!searchQuery.trim() || !chunk) {
           segments.push(isCitation
-            ? <mark key={keyPfx} ref={el => { if (el) highlightRef.current = el; }} className="citation-highlight bg-amber-400/25 text-inherit border-b-2 border-amber-400 rounded-sm px-0.5 animate-pulse-once">{chunk}</mark>
+            ? <mark key={keyPfx} ref={el => { if (el) highlightRef.current = el; }} className={`${citeClass} animate-pulse-once`}>{chunk}</mark>
             : <span key={keyPfx}>{chunk}</span>
           );
           return;
@@ -111,7 +130,7 @@ export function DocumentViewer({
           si++;
         }
         segments.push(isCitation
-          ? <mark key={keyPfx} ref={el => { if (el) highlightRef.current = el; }} className="citation-highlight bg-amber-400/25 text-inherit border-b-2 border-amber-400 rounded-sm px-0.5">{parts}</mark>
+          ? <mark key={keyPfx} ref={el => { if (el) highlightRef.current = el; }} className={citeClass}>{parts}</mark>
           : <span key={keyPfx}>{parts}</span>
         );
       };
@@ -150,7 +169,7 @@ export function DocumentViewer({
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col bg-[#111113]">
+      <div className="absolute inset-0 flex flex-col bg-[#111113]">
         <div className="h-11 border-b border-white/10 bg-[#111113] flex items-center px-4 gap-3 shrink-0 animate-pulse">
           <div className="h-3 w-32 bg-zinc-700 rounded"></div>
           <div className="h-3 w-16 bg-zinc-800 rounded ml-auto"></div>
@@ -166,7 +185,7 @@ export function DocumentViewer({
 
   if (!text) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#111113] text-zinc-500 text-sm flex-col gap-2">
+      <div className="absolute inset-0 flex items-center justify-center bg-[#111113] text-zinc-500 text-sm flex-col gap-2">
         <svg className="w-8 h-8 mb-2 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
         <p>No document content available.</p>
       </div>
@@ -174,7 +193,7 @@ export function DocumentViewer({
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#111113] overflow-hidden">
+    <div className="absolute inset-0 flex flex-col bg-[#111113] overflow-hidden">
       {/* Viewer Toolbar */}
       <div className="h-11 border-b border-white/10 bg-[#111113] flex items-center px-4 gap-3 shrink-0">
         {/* Search */}
@@ -222,14 +241,25 @@ export function DocumentViewer({
 
       {/* Citation banner */}
       {characterStart != null && (
-        <div className="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center gap-2">
-          <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <p className="text-xs text-amber-300 font-medium">Showing citation source — highlighted below</p>
+        <div className={`shrink-0 border-b px-4 py-2 flex items-center gap-2 ${
+          highlightColor === "emerald" 
+            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+            : highlightColor === "rose"
+            ? "bg-rose-500/10 border-rose-500/20 text-rose-300"
+            : "bg-amber-500/10 border-amber-500/20 text-amber-300"
+        }`}>
+          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <p className="text-[11px] font-medium tracking-tight">Source block mapped — see highlighted text below</p>
         </div>
       )}
 
       {/* Document content area */}
-      <div className="flex-1 overflow-y-auto" style={{ scrollBehavior: "smooth" }}>
+      <div 
+        ref={scrollContainerRef}
+        onScroll={onScroll}
+        className="flex-1 overflow-y-auto custom-scrollbar" 
+        style={{ scrollBehavior: "smooth" }}
+      >
         <div className="px-12 py-10 max-w-4xl mx-auto">
           {/* Document "paper" */}
           <div
