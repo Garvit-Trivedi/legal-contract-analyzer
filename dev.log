@@ -1,0 +1,191 @@
+nohup: ignoring input
+
+> legal-contract-analyzer@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.8 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.147.11.81:3000
+- Environments: .env.local
+✓ Ready in 511ms
+✓ Running next.config.ts took 44ms
+
+ GET / 200 in 1807ms (next.js: 758ms, application-code: 1049ms)
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/" notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="en"
+                          className="h-full antialiased"
+-                         data-jetski-tab-id="1436336077"
+                        >
+                  ...
+ 
+ POST / 200 in 113ms (next.js: 13ms, application-code: 100ms)
+  └─ ƒ getConversations() in 78ms src/lib/ai/chat.actions.ts
+ POST / 200 in 82ms (next.js: 4ms, application-code: 78ms)
+  └─ ƒ getConversations() in 63ms src/lib/ai/chat.actions.ts
+[browser] ./src/components/WorkspaceManager.tsx:7:1
+Error: Module not found: Can't resolve './ChatWindow'
+   5 | import { DocumentDeleteButton } from "./DocumentDeleteButton";
+   6 | import { getMessages, getConversations } from "@/lib/ai/chat.actions";
+>  7 | import { ChatWindow } from "./ChatWindow";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   8 |
+   9 | export function WorkspaceManager({ initialDocuments }: { initialDocuments: any[] }) {
+  10 |   const [activeTab, setActiveTab] = useState<'documents' | 'conversations'>('documents');
+
+Import trace:
+  Server Component:
+    ./src/components/WorkspaceManager.tsx
+    ./src/app/page.tsx
+
+https://nextjs.org/docs/messages/module-not-found 
+ GET / 200 in 206ms (next.js: 8ms, application-code: 198ms)
+ POST / 200 in 85ms (next.js: 3ms, application-code: 81ms)
+  └─ ƒ getConversations() in 71ms src/lib/ai/chat.actions.ts
+ POST / 200 in 86ms (next.js: 5ms, application-code: 81ms)
+  └─ ƒ getConversations() in 68ms src/lib/ai/chat.actions.ts
+Chat generation error: Error [ApiError]: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}}
+    at async Object.start (src/app/api/chat/route.ts:89:34)
+  87 |
+  88 |           const ai = getGeminiClient();
+> 89 |           const responseStream = await ai.models.generateContentStream({
+     |                                  ^
+  90 |             model: "gemini-3.8-flash",
+  91 |             contents: [
+  92 |               { role: "user", parts: [{ text: systemPrompt + "\n\nUser Question: " + message }] } {
+  status: 503
+}
+ POST /api/chat 200 in 105s (next.js: 473ms, application-code: 104s)
+[browser] API error: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}} 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)
+Chat generation error: Error [ApiError]: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}}
+    at async Object.start (src/app/api/chat/route.ts:89:34)
+  87 |
+  88 |           const ai = getGeminiClient();
+> 89 |           const responseStream = await ai.models.generateContentStream({
+     |                                  ^
+  90 |             model: "gemini-3.8-flash",
+  91 |             contents: [
+  92 |               { role: "user", parts: [{ text: systemPrompt + "\n\nUser Question: " + message }] } {
+  status: 503
+}
+ POST /api/chat 200 in 3.2s (next.js: 5ms, application-code: 3.2s)
+[browser] API error: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}} 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)
+Chat generation error: Error [ApiError]: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}}
+    at async Object.start (src/app/api/chat/route.ts:89:34)
+  87 |
+  88 |           const ai = getGeminiClient();
+> 89 |           const responseStream = await ai.models.generateContentStream({
+     |                                  ^
+  90 |             model: "gemini-3.8-flash",
+  91 |             contents: [
+  92 |               { role: "user", parts: [{ text: systemPrompt + "\n\nUser Question: " + message }] } {
+  status: 503
+}
+ POST /api/chat 200 in 4.8s (next.js: 12ms, application-code: 4.8s)
+[browser] API error: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}} 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)
+Chat generation error: Error [ApiError]: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}}
+    at async Object.start (src/app/api/chat/route.ts:89:34)
+  87 |
+  88 |           const ai = getGeminiClient();
+> 89 |           const responseStream = await ai.models.generateContentStream({
+     |                                  ^
+  90 |             model: "gemini-3.8-flash",
+  91 |             contents: [
+  92 |               { role: "user", parts: [{ text: systemPrompt + "\n\nUser Question: " + message }] } {
+  status: 503
+}
+ POST /api/chat 200 in 70s (next.js: 18ms, application-code: 70s)
+[browser] API error: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}} 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)
+ POST /api/chat 400 in 12ms (next.js: 5ms, application-code: 7ms)
+Chat generation error: Error: Incomplete JSON segment at the end
+    at processStreamResponse_1.next (<anonymous>)
+ POST /api/chat 200 in 2.0min (next.js: 9ms, application-code: 2.0min)
+[browser] API error: Incomplete JSON segment at the end 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)
+Chat generation error: Error [ApiError]: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}}
+    at async Object.start (src/app/api/chat/route.ts:89:34)
+  87 |
+  88 |           const ai = getGeminiClient();
+> 89 |           const responseStream = await ai.models.generateContentStream({
+     |                                  ^
+  90 |             model: "gemini-3.8-flash",
+  91 |             contents: [
+  92 |               { role: "user", parts: [{ text: systemPrompt + "\n\nUser Question: " + message }] } {
+  status: 503
+}
+ POST /api/chat 200 in 98s (next.js: 12ms, application-code: 98s)
+[browser] API error: {"error":{"message":"{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n","code":503,"status":"Service Unavailable"}} 
+    at handleSubmit (src/components/ChatWindow.tsx:93:25)
+  91 |                 ));
+  92 |               } else if (data.type === 'error') {
+> 93 |                 console.error("API error:", data.error);
+     |                         ^
+  94 |                 setMessages(prev => prev.map(m => 
+  95 |                   m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m
+  96 |                 )); (src/components/ChatWindow.tsx:93:25)

@@ -1,11 +1,11 @@
 import React from "react";
 import { getDocuments } from "@/lib/document/actions";
-import { Dashboard } from "@/components/dashboard/Dashboard";
 import { getConversations } from "@/lib/ai/chat.actions";
+import { GlobalHistory } from "@/components/dashboard/GlobalHistory";
 
-export default async function Home() {
+export default async function HistoryPage() {
   const documents = await getDocuments();
   const conversations = await getConversations();
 
-  return <Dashboard initialDocuments={documents} initialConversations={conversations} />;
+  return <GlobalHistory documents={documents} conversations={conversations} />;
 }

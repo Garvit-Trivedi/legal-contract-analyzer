@@ -114,6 +114,11 @@ export async function getDocuments() {
   });
 }
 
+export async function getDocumentText(documentId: string) {
+  const [doc] = await db.select({ text: documents.extractedText }).from(documents).where(eq(documents.id, documentId));
+  return doc?.text || "";
+}
+
 export async function deleteDocument(documentId: string) {
   // Cascading deletes are not strictly enforced in our Drizzle schema for chunks,
   // so we must delete chunks explicitly within a transaction to avoid orphan chunks.

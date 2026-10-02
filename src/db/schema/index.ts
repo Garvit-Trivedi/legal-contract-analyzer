@@ -58,4 +58,8 @@ export const citationsRelations = relations(citations, ({ one }) => ({
     fields: [citations.documentId],
     references: [documents.id],
   }),
+  chunk: one(documentChunks, {
+    fields: [citations.chunkId],
+    references: [documentChunks.id],
+  }),
 }));
