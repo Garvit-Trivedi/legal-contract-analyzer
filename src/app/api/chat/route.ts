@@ -15,15 +15,29 @@ export async function POST(req: NextRequest) {
     }
 
     let conversationId = existingConversationId;
+    let documentIdsToUse = [...documentIds];
 
-    if (!conversationId) {
+    if (conversationId) {
+      // Load from DB securely rather than trusting browser
+      const dbConvDocs = await db.query.conversationDocuments.findMany({
+        where: eq(conversationDocuments.conversationId, conversationId)
+      });
+      if (dbConvDocs.length === 0) {
+        return NextResponse.json({ error: "Conversation has no associated documents" }, { status: 400 });
+      }
+      documentIdsToUse = dbConvDocs.map(cd => cd.documentId);
+    } else {
+      if (!documentIdsToUse || documentIdsToUse.length === 0) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      }
+
       const [newConv] = await db.insert(conversations).values({
         title: message.substring(0, 50) + (message.length > 50 ? "..." : ""),
       }).returning();
       conversationId = newConv.id;
       
       await db.insert(conversationDocuments).values(
-        documentIds.map((id: string) => ({
+        documentIdsToUse.map((id: string) => ({
           conversationId,
           documentId: id
         }))
@@ -33,7 +47,7 @@ export async function POST(req: NextRequest) {
     // Semantic Retrieval
     const results = await searchDocuments({
       query: message,
-      documentIds,
+      documentIds: documentIdsToUse,
       topK: 6,
     });
 

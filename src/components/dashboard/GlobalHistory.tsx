@@ -2,62 +2,60 @@
 
 import React from "react";
 import Link from "next/link";
-import { DocumentDeleteButton } from "@/components/DocumentDeleteButton"; // maybe chat delete?
+import { DocumentDeleteButton } from "@/components/DocumentDeleteButton"; 
 
 export function GlobalHistory({ documents, conversations }: { documents: any[], conversations: any[] }) {
-  // Sort conversations by most recent
   const sorted = [...conversations].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-slate-300 font-sans tracking-tight">
-      <header className="h-16 border-b border-white/5 bg-[#0a0a0b]/80 backdrop-blur-md flex items-center justify-between px-8 absolute top-0 w-full z-10">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-xs text-slate-500 hover:text-white transition-colors flex items-center gap-1.5 font-medium">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Dashboard
-          </Link>
-          <span className="text-slate-600">/</span>
-          <h1 className="text-sm font-semibold text-white tracking-widest uppercase">
-            Global Activity Logs
-          </h1>
-        </div>
-      </header>
-      
-      <main className="max-w-4xl mx-auto pt-28 pb-12 px-8">
-         <div className="mb-10">
-            <h2 className="text-2xl font-light text-white mb-2">Chat History</h2>
-            <p className="text-sm text-slate-400">Activity across all isolated document workspaces.</p>
+    <div className="flex-1 bg-[#09090b] text-zinc-300 font-sans tracking-tight h-full overflow-y-auto custom-scrollbar">
+      <main className="max-w-4xl mx-auto pt-10 pb-12 px-8">
+         <div className="mb-8">
+            <h2 className="text-2xl font-semibold text-white mb-2">Chat History</h2>
+            <p className="text-sm text-zinc-400">Review your past conversations across all documents.</p>
          </div>
 
          {sorted.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-20 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
-              <p className="text-lg font-medium text-white mb-2">No interactions logged</p>
-              <p className="text-sm text-slate-400">Open a document workspace and ask AI a question.</p>
+            <div className="flex flex-col items-center justify-center p-20 text-center border border-white/10 rounded-xl bg-[#18181b]">
+              <p className="text-base font-medium text-white mb-1">No interactions logged</p>
+              <p className="text-sm text-zinc-500">Open a document workspace and ask AI a question to start.</p>
            </div>
          ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
                {sorted.map(conv => {
-                  const docMapping = conv.conversationDocuments[0]; // assuming strictly 1-to-1 in new model
-                  if (!docMapping) return null;
+                  const isMultiDoc = conv.conversationDocuments.length > 1;
                   
-                  const doc = documents.find(d => d.id === docMapping.documentId);
-                  if (!doc) return null;
+                  if (conv.conversationDocuments.length === 0) return null;
+                  
+                  const docIds = conv.conversationDocuments.map((m: any) => m.documentId);
+                  const convDocs = documents.filter(d => docIds.includes(d.id));
+                  
+                  if (convDocs.length === 0) return null;
+
+                  const url = isMultiDoc ? `/chat/${conv.id}` : `/documents/${convDocs[0].id}?conv=${conv.id}`;
 
                   return (
                      <Link 
                         key={conv.id} 
-                        href={`/documents/${doc.id}?conv=${conv.id}`}
-                        className="block bg-[#131316] border border-white/5 rounded-xl p-5 hover:border-amber-500/30 hover:bg-white/5 transition-all group"
+                        href={url}
+                        className="block bg-[#18181b] border border-white/5 rounded-lg p-5 hover:border-white/20 transition-all group shadow-sm"
                      >
                         <div className="flex justify-between items-start mb-2">
-                           <h3 className="text-base font-medium text-amber-500 group-hover:text-amber-400">{conv.title}</h3>
-                           <span className="text-[10px] uppercase font-mono text-slate-500 tracking-wider">
+                           <h3 className="text-sm font-medium text-zinc-200 group-hover:text-blue-400 transition-colors">
+                             {isMultiDoc && <span className="mr-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">Multi</span>}
+                             {conv.title}
+                           </h3>
+                           <span className="text-xs text-zinc-500 shrink-0 ml-4">
                               {new Date(conv.updatedAt).toLocaleDateString()} {new Date(conv.updatedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
                            </span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
-                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                           {doc.filename}
+                        <div className="flex items-center gap-2 text-xs text-zinc-400">
+                           <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                           <span className="truncate">
+                             {isMultiDoc 
+                               ? `${convDocs.length} documents attached` 
+                               : convDocs[0].filename}
+                           </span>
                         </div>
                      </Link>
                   );

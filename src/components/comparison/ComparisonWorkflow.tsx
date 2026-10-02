@@ -3,9 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ComparisonView } from "@/components/ComparisonView";
-import { DocumentViewer } from "@/components/DocumentViewer"; // Need a fallback doc viewer?
-// Actually if activeCitation triggers, we might want to pop up the document viewer here!
-// Let's implement a dual-viewer or overlay.
+import { DocumentViewer } from "@/components/DocumentViewer";
 
 export function ComparisonWorkflow({ documents }: { documents: any[] }) {
   const [docA, setDocA] = useState<string | null>(null);
@@ -23,35 +21,21 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
   const bName = documents.find(d => d.id === docB)?.filename || "Document B";
 
   return (
-    <div className="flex flex-col h-screen bg-[#0a0a0b] text-slate-300 font-sans tracking-tight overflow-hidden">
-      <header className="h-16 border-b border-white/5 bg-[#0a0a0b]/80 backdrop-blur-md flex items-center justify-between px-8 absolute top-0 w-full z-20">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-xs text-slate-500 hover:text-white transition-colors flex items-center gap-1.5 font-medium">
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Dashboard
-          </Link>
-          <span className="text-slate-600">/</span>
-          <h1 className="text-sm font-semibold text-white uppercase tracking-widest">
-            Cross-Document Alignment
-          </h1>
-        </div>
-      </header>
-      
+    <div className="flex-1 flex flex-col h-full bg-[#09090b] text-zinc-300 font-sans tracking-tight overflow-hidden">
       {mode === 'select' ? (
-        <main className="flex-1 max-w-4xl mx-auto w-full pt-32 p-8">
+        <main className="flex-1 max-w-4xl mx-auto w-full pt-16 p-8 overflow-y-auto custom-scrollbar">
            <div className="text-center mb-12">
-              <h2 className="text-2xl font-light text-white mb-3">Compare Two Agreements</h2>
-              <p className="text-sm text-slate-400">Select two documents to trigger automated Substantive Change discovery via AI.</p>
+              <h2 className="text-2xl font-semibold text-white mb-3">Compare Documents</h2>
+              <p className="text-sm text-zinc-400">Select two indexed documents to trigger automated semantic change discovery.</p>
            </div>
            
            <div className="grid grid-cols-2 gap-8 mb-12">
-              {/* Box A */}
-              <div className="bg-[#131316] p-6 rounded-xl border border-white/10 shadow-lg">
-                 <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-500 mb-4 pb-2 border-b border-white/5">Select Document A</h3>
+              <div className="bg-[#18181b] p-6 rounded-xl border border-white/10 shadow-sm">
+                 <h3 className="text-xs font-semibold uppercase text-zinc-400 mb-4 pb-2 border-b border-white/10">Base Document</h3>
                  <select 
                     value={docA || ""}
                     onChange={e => setDocA(e.target.value)}
-                    className="w-full bg-[#1c1c1f] border border-white/10 rounded-md p-3 text-sm text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full bg-[#09090b] border border-white/10 rounded-md p-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50"
                  >
                     <option value="" disabled>-- Select First File --</option>
                     {documents.map(d => (
@@ -60,13 +44,12 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
                  </select>
               </div>
 
-              {/* Box B */}
-              <div className="bg-[#131316] p-6 rounded-xl border border-white/10 shadow-lg">
-                 <h3 className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-4 pb-2 border-b border-white/5">Select Document B</h3>
+              <div className="bg-[#18181b] p-6 rounded-xl border border-white/10 shadow-sm">
+                 <h3 className="text-xs font-semibold uppercase text-zinc-400 mb-4 pb-2 border-b border-white/10">Target Document</h3>
                  <select 
                     value={docB || ""}
                     onChange={e => setDocB(e.target.value)}
-                    className="w-full bg-[#1c1c1f] border border-white/10 rounded-md p-3 text-sm text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full bg-[#09090b] border border-white/10 rounded-md p-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50"
                  >
                     <option value="" disabled>-- Select Second File --</option>
                     {documents.map(d => (
@@ -80,14 +63,14 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
               <button 
                  disabled={!docA || !docB || docA === docB}
                  onClick={startComparison}
-                 className="px-8 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:hover:bg-amber-500 text-black font-bold uppercase tracking-widest rounded-full transition-colors shadow-lg"
+                 className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 text-white font-medium rounded-md transition-colors shadow-sm"
               >
-                 Initialize Comparison Engine
+                 Run Comparison
               </button>
            </div>
         </main>
       ) : (
-        <main className="flex-1 flex overflow-hidden pt-16">
+        <main className="flex-1 flex overflow-hidden">
            <div className="flex-1 relative">
              {docA && docB && (
                 <ComparisonView 
@@ -100,9 +83,8 @@ export function ComparisonWorkflow({ documents }: { documents: any[] }) {
              )}
            </div>
            
-           {/* Slide out Reference viewer */}
            {activeCitation && (
-              <div className="w-[450px] flex-shrink-0 bg-[#0f0f11] border-l border-white/5 z-20 shadow-2xl relative">
+              <div className="w-[450px] flex-shrink-0 bg-[#0f0f11] border-l border-white/10 z-20 relative">
                   <DocumentViewer 
                     documentId={activeCitation.documentId}
                     characterStart={activeCitation.characterStart}
