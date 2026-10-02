@@ -16,8 +16,8 @@ export const documentChunks = pgTable(
     characterStart: integer("character_start"),
     characterEnd: integer("character_end"),
     section: text("section"),
-    // Gemini text-embedding-004 has 768 dimensions
-    embedding: vector("embedding", { dimensions: 768 }),
+    // Gemini gemini-embedding-2 has 3072 dimensions
+    embedding: vector("embedding", { dimensions: 3072 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [

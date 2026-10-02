@@ -6,6 +6,7 @@ import { documents, documentChunks } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { extractTextFromFile, ExtractionError } from "./extraction";
 import { chunkExtractedPages } from "./chunking";
+import { indexDocument } from "../ai/retrieval";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -79,7 +80,15 @@ export async function processUploadedDocument(formData: FormData) {
         .where(eq(documents.id, initalDoc.id));
     });
 
-    revalidatePath("/");
+    try { revalidatePath("/"); } catch(e) {}
+    
+    // Fire indexing process
+    try {
+      await indexDocument(initalDoc.id);
+    } catch (indexErr) {
+      console.error("Indexing failed for document", initalDoc.id, indexErr);
+    }
+
     return { success: true, documentId: initalDoc.id };
   } catch (err: any) {
     const errorMessage = err instanceof ExtractionError ? err.message : "An unexpected error occurred during processing.";
@@ -94,7 +103,7 @@ export async function processUploadedDocument(formData: FormData) {
       })
       .where(eq(documents.id, initalDoc.id));
       
-    revalidatePath("/");
+    try { revalidatePath("/"); } catch(e) {}
     return { success: false, error: errorMessage };
   }
 }
@@ -112,6 +121,6 @@ export async function deleteDocument(documentId: string) {
     await tx.delete(documentChunks).where(eq(documentChunks.documentId, documentId));
     await tx.delete(documents).where(eq(documents.id, documentId));
   });
-  revalidatePath("/");
+  try { revalidatePath("/"); } catch(e) {}
   return { success: true };
 }

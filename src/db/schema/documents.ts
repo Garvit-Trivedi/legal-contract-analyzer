@@ -7,6 +7,13 @@ export const processingStatusEnum = pgEnum("processing_status", [
   "failed",
 ]);
 
+export const indexingStatusEnum = pgEnum("indexing_status", [
+  "pending",
+  "indexing",
+  "completed",
+  "failed",
+]);
+
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   filename: varchar("filename", { length: 255 }).notNull(),
@@ -15,6 +22,8 @@ export const documents = pgTable("documents", {
   extractedText: text("extracted_text"),
   processingStatus: processingStatusEnum("processing_status").notNull().default("pending"),
   processingError: text("processing_error"),
+  indexingStatus: indexingStatusEnum("indexing_status").notNull().default("pending"),
+  indexingError: text("indexing_error"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()
