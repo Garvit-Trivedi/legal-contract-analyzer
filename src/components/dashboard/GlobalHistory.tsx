@@ -28,9 +28,27 @@ export function GlobalHistory({ documents, conversations }: { documents: any[], 
                   if (conv.conversationDocuments.length === 0) return null;
                   
                   const docIds = conv.conversationDocuments.map((m: any) => m.documentId);
-                  const convDocs = documents.filter(d => docIds.includes(d.id));
+                  const convDocs = documents.filter((d: any) => docIds.includes(d.id));
                   
-                  if (convDocs.length === 0) return null;
+                  if (convDocs.length === 0) {
+                     return (
+                        <div key={conv.id} className="block bg-[#18181b]/50 border border-red-500/10 rounded-lg p-5 shadow-sm">
+                           <div className="flex justify-between items-start mb-2">
+                              <h3 className="text-sm font-medium text-zinc-400 line-through decoration-zinc-600">
+                                {isMultiDoc && <span className="mr-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-zinc-500/10 text-zinc-500 border border-zinc-500/20">Multi</span>}
+                                {conv.title}
+                              </h3>
+                              <span className="text-xs text-zinc-600 shrink-0 ml-4">
+                                 {new Date(conv.updatedAt).toLocaleDateString()} {new Date(conv.updatedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                              </span>
+                           </div>
+                           <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                              <span>Orphaned conversation (documents deleted)</span>
+                           </div>
+                        </div>
+                     );
+                  }
 
                   const url = isMultiDoc ? `/chat/${conv.id}` : `/documents/${convDocs[0].id}?conv=${conv.id}`;
 
