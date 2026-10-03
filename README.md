@@ -113,24 +113,32 @@ flowchart LR
 > **Note:** Screenshots are documented below but must be manually captured via user system.
 
 ### Dashboard / Document Library
-> Screenshot needed: `docs/screenshots/dashboard.png` (Capture multi-document grid view)
-
-The global entry point. Allows uploading raw `.docx` or `.pdf` files, tracking embedding progress, and multi-selecting files to spawn RAG workspaces.
+![Dashboard](docs/screenshots/dashboard.png)
+- **Centralized Document Hub**: Manage all uploaded DOCX, PDF, and TXT files in one table.
+- **Upload Progress Metrics**: Instantly tracking vector embeddings and file ingestion states.
+- **Multi-Document Selection**: Select multiple checked documents via the top-level header to spawn global RAG analysis workspaces.
 
 ### Document Workspace
-> Screenshot needed: `docs/screenshots/workspace.png` (Capture document viewer with open chat)
-
-The core reading view. Houses the document viewer, streaming RAG chat panel, and verified citation tags.
+![Workspace](docs/screenshots/workspace.png)
+- **Unified Reading View**: Presents the full extracted textual representation of the parsed document safely.
+- **Streaming Chat Integration**: AI interactions occur in real-time, contextually pinned to the current active document natively rendering side-by-side.
+- **Verified Citations Integration**: Answers arrive fully hyperlinked to exact geographical coordinates found elsewhere in the DOM.
 
 ### Verified Citation Navigation
-> Screenshot needed: `docs/screenshots/citations.png` (Capture a clicked citation highlighting a bounding box in the viewer)
-
-Answers end in a citation. Clicking it fires an event to the `DocumentViewer` ref, snapping the viewport directly over the mathematical string segment without guessing via text-find.
+*(Feature functionally embedded within the Document Workspace RAG Panel)*
+- **Mathematical Bound Location**: Clicking a green "Verified Source" citation fires an event to the `DocumentViewer` ref, snapping the viewport directly over the isolated character segments via mathematical string alignment (zero guessing / hallucination control).
 
 ### Document Comparison Workspace
-> Screenshot needed: `docs/screenshots/comparison.png` (Capture the 4-column side-by-side diff view)
+![Comparison](docs/screenshots/comparison.png)
+- **Synchronized Visual Tracking**: Scroll states interpolate mathematically across pane bounds regardless of asymmetric paragraph injection length between input versions.
+- **Isolated Diff Mapping**: Aggressively segregates the text changes into parsed categories (`ADDED`, `REMOVED`, `MODIFIED`).
+- **Bounded Agentic Impact AI**: The comparison AI operates uniquely off isolated tracked revisions, evaluating deviation severity intelligently without losing context into un-modified bounds. 
 
-Executes a structural diff mapping Added, Removed, and Modified clauses. Exposes the Agentic Research AI strictly bounded to evaluating those isolated differences. 
+### Tracked-Change Contract Redlining
+![Redline Settings](docs/screenshots/redline.png)
+- **Natural-Language Editing**: Submit "Make liability mutual" requests directly to the document AI contextual parser.
+- **Zero-Trust Verification**: Automatically verifies the origin fragment geometrically against the source bytes before constructing OpenXML proposals.
+- **Native DOCX Export Pipeline**: Directly outputs a finalized MS Word OpenXML `.docx` with natively embedded Tracked Change markup for legal negotiation.
 
 ---
 
