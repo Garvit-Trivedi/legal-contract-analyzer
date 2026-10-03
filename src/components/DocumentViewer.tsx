@@ -272,8 +272,7 @@ export function DocumentViewer({
       <div 
         ref={scrollContainerRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto custom-scrollbar" 
-        style={{ scrollBehavior: "smooth" }}
+        className="flex-1 overflow-y-auto custom-scrollbar"
       >
         <div className="px-12 py-10 max-w-4xl mx-auto">
           {/* Document "paper" */}

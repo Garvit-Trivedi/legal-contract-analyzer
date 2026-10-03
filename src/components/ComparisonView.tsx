@@ -184,18 +184,15 @@ export function ComparisonView({
   // Synchronized scrolling state
   const paneARef = useRef<HTMLDivElement>(null);
   const paneBRef = useRef<HTMLDivElement>(null);
-  const isHoveringA = useRef(false);
-  const isHoveringB = useRef(false);
+  const isSyncing = useRef(false); // prevent feedback loops
   const [syncScroll, setSyncScroll] = useState(true);
   const [lenA, setLenA] = useState(1);
   const [lenB, setLenB] = useState(1);
 
-  // Derive mapped scrolling function
+  // Robust scroll sync using isSyncing guard to prevent feedback loops
   const handleScroll = (source: 'A' | 'B', e: React.UIEvent<HTMLDivElement>) => {
     if (!syncScroll || !result || result.changes.length === 0) return;
-    
-    if (source === 'A' && isHoveringB.current) return;
-    if (source === 'B' && isHoveringA.current) return;
+    if (isSyncing.current) return; // already synchronizing, don't fire again
 
     const A = paneARef.current;
     const B = paneBRef.current;
@@ -206,14 +203,14 @@ export function ComparisonView({
     const sourceLen = source === 'A' ? lenA : lenB;
     const targetLen = source === 'A' ? lenB : lenA;
 
-    // Fast path: if identical lengths somehow or no changes, fallback to proportion
-    const sourceRatio = sourceEl.scrollTop / (sourceEl.scrollHeight - sourceEl.clientHeight || 1);
-    const sourceCharIdx = sourceRatio * sourceLen;
+    const maxSourceScroll = sourceEl.scrollHeight - sourceEl.clientHeight;
+    if (maxSourceScroll <= 0) return;
+    const sourceRatio = sourceEl.scrollTop / maxSourceScroll;
+    const sourceCharIdx = sourceRatio * (sourceLen || 1);
 
-    // Find the closest change in the source document
+    // Find the closest aligned change anchor point for precision mapping
     let closestChange = null;
     let minDiff = Infinity;
-    
     for (const change of result.changes) {
       const loc = source === 'A' ? change.beforeLocation : change.afterLocation;
       if (!loc) continue;
@@ -224,19 +221,21 @@ export function ComparisonView({
       }
     }
 
+    let targetRatio = sourceRatio; // default: proportional
     if (closestChange) {
-      // Map it to target location
       const targetLoc = source === 'A' ? closestChange.afterLocation : closestChange.beforeLocation;
-      if (targetLoc) {
-        const targetRatio = targetLoc.characterStart / (targetLen || 1);
-        targetEl.scrollTop = targetRatio * (targetEl.scrollHeight - targetEl.clientHeight);
-      } else {
-        // Fallback to proportional if change is unbalanced
-        targetEl.scrollTop = sourceRatio * (targetEl.scrollHeight - targetEl.clientHeight);
+      if (targetLoc && targetLen > 0) {
+        targetRatio = targetLoc.characterStart / targetLen;
       }
-    } else {
-       targetEl.scrollTop = sourceRatio * (targetEl.scrollHeight - targetEl.clientHeight);
     }
+
+    const maxTargetScroll = targetEl.scrollHeight - targetEl.clientHeight;
+    if (maxTargetScroll <= 0) return;
+
+    isSyncing.current = true;
+    targetEl.scrollTop = targetRatio * maxTargetScroll;
+    // Release the guard after one animation frame
+    requestAnimationFrame(() => { isSyncing.current = false; });
   };
 
   useEffect(() => {
@@ -424,17 +423,21 @@ export function ComparisonView({
            {/* Pane A */}
            <div 
              className="flex-1 border-r border-white/10 flex flex-col min-w-0 bg-[#0d0d10]"
-             onMouseEnter={() => { isHoveringA.current = true; }}
-             onMouseLeave={() => { isHoveringA.current = false; }}
+             aria-label="Version A document pane"
            >
              <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70 truncate px-4" title={documentAName}>Version A: {documentAName}</span>
+               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70 truncate px-4" title={documentAName}>⬅ Version A: {documentAName}</span>
              </div>
              <div className="flex-1 relative flex flex-col min-h-0">
                 <DocumentViewer 
                   documentId={documentAId} 
-                  characterStart={activeChange?.beforeLocation?.characterStart ?? null}
-                  characterEnd={activeChange?.beforeLocation?.characterEnd ?? null}
+                  characterStart={
+                    // ADDED changes don't have Pane A text — don't force a highlight there
+                    activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterStart ?? null) : null
+                  }
+                  characterEnd={
+                    activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterEnd ?? null) : null
+                  }
                   highlightColor={activeChange?.type === "REMOVED" ? "rose" : "amber"}
                   onClose={() => setSelectedChangeId(null)}
                   scrollContainerRef={paneARef}
@@ -447,17 +450,21 @@ export function ComparisonView({
            {/* Pane B */}
            <div 
              className="flex-1 flex flex-col min-w-0 bg-[#0d0d10]"
-             onMouseEnter={() => { isHoveringB.current = true; }}
-             onMouseLeave={() => { isHoveringB.current = false; }}
+             aria-label="Version B document pane"
            >
              <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70 truncate px-4" title={documentBName}>Version B: {documentBName}</span>
+               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70 truncate px-4" title={documentBName}>Version B: {documentBName} ➡</span>
              </div>
              <div className="flex-1 relative flex flex-col min-h-0">
                 <DocumentViewer 
                   documentId={documentBId} 
-                  characterStart={activeChange?.afterLocation?.characterStart ?? null}
-                  characterEnd={activeChange?.afterLocation?.characterEnd ?? null}
+                  characterStart={
+                    // REMOVED changes don't have Pane B text — don't force a highlight there
+                    activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterStart ?? null) : null
+                  }
+                  characterEnd={
+                    activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterEnd ?? null) : null
+                  }
                   highlightColor={activeChange?.type === "ADDED" ? "emerald" : "amber"}
                   onClose={() => setSelectedChangeId(null)}
                   scrollContainerRef={paneBRef}
@@ -554,11 +561,11 @@ function SidebarChangeCard({
       </div>
 
       {isSelected && change.tokenDiff.length > 0 && (
-         <div className="mt-3 pt-3 border-t border-white/10 text-[10px] font-mono leading-relaxed break-words bg-black/20 p-2 rounded max-h-32 overflow-y-auto">
+         <div className="mt-3 pt-3 border-t border-white/10 text-[10px] font-mono leading-relaxed break-words bg-black/20 p-2 rounded max-h-32 overflow-y-auto" aria-label="Token-level diff">
             {change.tokenDiff.map((tok, i) => {
               if (tok.op === "equal") return <span key={i} className="text-zinc-500">{tok.text}</span>;
-              if (tok.op === "delete") return <span key={i} className="bg-rose-900/40 text-rose-300 line-through">{tok.text}</span>;
-              return <span key={i} className="bg-emerald-900/40 text-emerald-300">{tok.text}</span>;
+              if (tok.op === "delete") return <del key={i} className="bg-rose-900/40 text-rose-300 line-through decoration-rose-400" title="Removed">{tok.text}</del>;
+              return <ins key={i} className="bg-emerald-900/40 text-emerald-300 underline decoration-emerald-400 not-italic" title="Added">{tok.text}</ins>;
             })}
          </div>
       )}
