@@ -163,76 +163,84 @@ export function ChatWindow({
     <div className="flex flex-col h-full bg-[#09090b] relative">
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 space-y-4">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full py-16 px-4 text-center">
-              <div className="w-10 h-10 bg-blue-600/10 border border-blue-500/20 rounded-full flex items-center justify-center mb-4">
-                <SparklesIcon className="w-5 h-5 text-blue-500" />
+            <div className="flex flex-col items-center justify-start h-full py-10 px-2 mt-4">
+              <div className="w-12 h-12 bg-[#18181b] border border-white/10 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+                <ShieldCheckIcon className="w-6 h-6 text-zinc-300" />
               </div>
-              <h3 className="text-sm font-semibold text-zinc-200 mb-1">Ask about this document</h3>
-              <p className="text-xs text-zinc-500 mb-6 max-w-xs">Get instant answers, summaries, and insights from the document content.</p>
-              <div className="space-y-2 w-full max-w-xs">
-                {[
-                  "Summarize this document",
-                  "What are the key obligations?",
-                  "What are the termination conditions?",
-                  "Identify important dates and amounts",
-                ].map(suggestion => (
-                  <button
-                    key={suggestion}
-                    onClick={async () => {
-                      setInput(suggestion);
-                      // Submit programmatically via synthetic event is unreliable,
-                      // instead set and trigger via handleSubmit directly
-                      const userMessage = { role: "user", content: suggestion, id: Date.now().toString() };
-                      setMessages(prev => [...prev, userMessage]);
-                      setInput("");
-                      setIsLoading(true);
-                      const abortController = new AbortController();
-                      abortControllerRef.current = abortController;
-                      try {
-                        const assistantId = "assistant-" + Date.now().toString();
-                        setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantId, loading: true }]);
-                        const res = await fetch("/api/chat", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ message: suggestion, documentIds, conversationId: activeConvId }),
-                          signal: abortController.signal,
-                        });
-                        if (!res.ok) {
-                          const errorData = await res.json().catch(() => ({}));
-                          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: "[Error: " + (errorData.error || "unexpected error") + "]", loading: false } : m));
-                          return;
-                        }
-                        const reader = res.body!.getReader();
-                        const decoder = new TextDecoder();
-                        let done = false;
-                        let textBuffer = "";
-                        let readBuffer = "";
-                        while (!done) {
-                          const { value, done: readerDone } = await reader.read();
-                          done = readerDone;
-                          if (value) {
-                            readBuffer += decoder.decode(value, { stream: true });
-                            const lines = readBuffer.split('\n');
-                            readBuffer = lines.pop() || "";
-                            for (const line of lines) {
-                              if (!line.trim()) continue;
-                              try {
-                                const data = JSON.parse(line);
-                                if (data.type === 'text') { textBuffer += data.content; setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: textBuffer, loading: false } : m)); }
-                                else if (data.type === 'done') { if (!activeConvId && data.conversationId) { setActiveConvId(data.conversationId); onConversationCreated(data.conversationId); } setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, citations: data.citations } : m)); }
-                                else if (data.type === 'error') { setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m)); }
-                              } catch (e) {}
+              <h3 className="text-[13px] font-semibold text-zinc-100 mb-2">Contract Clause & Evidence Inquiry</h3>
+              <p className="text-[11px] text-zinc-500 mb-10 max-w-[320px] text-center leading-relaxed">
+                Every assertion is cross-verified against indexed document clauses with zero-trust token matching. Click verified citations to inspect exact source clauses.
+              </p>
+              
+              <div className="w-full max-w-sm">
+                <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-3 pl-1">Suggested Inquiries:</p>
+                <div className="space-y-2.5">
+                  {[
+                    "What is the liability cap and financial limit?",
+                    "What are the termination provisions and notice periods?",
+                    "What are the governing law and jurisdiction terms?",
+                  ].map(suggestion => (
+                    <button
+                      key={suggestion}
+                      onClick={async () => {
+                        setInput(suggestion);
+                        const userMessage = { role: "user", content: suggestion, id: Date.now().toString() };
+                        setMessages(prev => [...prev, userMessage]);
+                        setInput("");
+                        setIsLoading(true);
+                        const abortController = new AbortController();
+                        abortControllerRef.current = abortController;
+                        try {
+                          const assistantId = "assistant-" + Date.now().toString();
+                          setMessages(prev => [...prev, { role: "assistant", content: "", id: assistantId, loading: true }]);
+                          
+                          const endpoint = useResearchMode ? "/api/research" : "/api/chat";
+                          const res = await fetch(endpoint, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ message: suggestion, documentIds, conversationId: activeConvId }),
+                            signal: abortController.signal,
+                          });
+                          if (!res.ok) {
+                            const errorData = await res.json().catch(() => ({}));
+                            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: "[Error: " + (errorData.error || "unexpected error") + "]", loading: false } : m));
+                            return;
+                          }
+                          const reader = res.body!.getReader();
+                          const decoder = new TextDecoder();
+                          let done = false;
+                          let textBuffer = "";
+                          let readBuffer = "";
+                          while (!done) {
+                            const { value, done: readerDone } = await reader.read();
+                            done = readerDone;
+                            if (value) {
+                              readBuffer += decoder.decode(value, { stream: true });
+                              const lines = readBuffer.split('\n');
+                              readBuffer = lines.pop() || "";
+                              for (const line of lines) {
+                                if (!line.trim()) continue;
+                                try {
+                                  const data = JSON.parse(line);
+                                  if (data.type === 'init' && !activeConvId && data.conversationId) { setActiveConvId(data.conversationId); onConversationCreated(data.conversationId); }
+                                  else if (data.type === 'text') { textBuffer += data.content; setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: textBuffer, loading: false } : m)); }
+                                  else if (data.type === 'done') { if (!activeConvId && data.conversationId) { setActiveConvId(data.conversationId); onConversationCreated(data.conversationId); } setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: data.text || textBuffer, citations: data.citations, timeline: [...(m.timeline || []), { type: 'research_completed' }] } : m)); }
+                                  else if (data.type === 'error') { setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: textBuffer + "\n\n[Error: " + data.error + "]", loading: false } : m)); }
+                                  else if (['research_started', 'agent_thinking', 'tool_call', 'tool_result', 'research_round', 'research_completed', 'tool_limit_reached'].includes(data.type)) { setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, timeline: [...(m.timeline || []), data] } : m)); }
+                                } catch (e) {}
+                              }
                             }
                           }
-                        }
-                      } catch (e: any) { if (e.name !== "AbortError") console.error(e); }
-                      finally { setIsLoading(false); abortControllerRef.current = null; }
-                    }}
-                    className="w-full text-left px-3 py-2.5 rounded-lg border border-white/[0.08] bg-[#111115] hover:bg-[#18181c] hover:border-white/15 text-xs text-zinc-300 transition-colors"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
+                        } catch (e: any) { if (e.name !== "AbortError") console.error(e); }
+                        finally { setIsLoading(false); abortControllerRef.current = null; }
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/10 bg-[#111115] hover:bg-[#18181c] hover:border-white/20 text-xs text-zinc-300 transition-all group shadow-sm text-left"
+                    >
+                      <span className="font-medium">{suggestion}</span>
+                      <svg className="w-3.5 h-3.5 text-zinc-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -364,36 +372,40 @@ export function ChatWindow({
           </label>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
-          <textarea
-            disabled={isLoading}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); } }}
-            placeholder="Ask about this document…"
-            rows={1}
-            className="flex-1 bg-[#18181b] border border-white/10 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 transition-all resize-none placeholder-zinc-600 overflow-hidden"
-            style={{ minHeight: '44px', maxHeight: '120px' }}
-          />
-          {isLoading ? (
-            <button
-              type="button"
-              onClick={handleStop}
-              className="shrink-0 w-9 h-9 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 flex items-center justify-center transition-colors border border-white/10"
-              aria-label="Stop generation"
-            >
-              <StopIcon className="w-3.5 h-3.5" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim()}
-              className="shrink-0 w-9 h-9 rounded-xl bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors shadow-sm"
-              aria-label="Send message"
-            >
-              <ArrowUpIcon className="w-4 h-4" />
-            </button>
-          )}
+        <form onSubmit={handleSubmit} className="relative flex flex-col gap-2">
+          <div className="flex border border-white/10 rounded-xl overflow-hidden bg-[#18181b] focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+            <textarea
+              disabled={isLoading}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); } }}
+              placeholder="Ask question about this document…"
+              rows={1}
+              className="flex-1 bg-transparent px-4 py-3.5 text-sm text-zinc-200 focus:outline-none disabled:opacity-50 resize-none placeholder-zinc-600 overflow-hidden leading-tight"
+              style={{ minHeight: '46px', maxHeight: '120px' }}
+            />
+            <div className="shrink-0 flex items-end p-1.5 self-end">
+              {isLoading ? (
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  className="w-[60px] h-9 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 flex items-center justify-center transition-colors border border-white/10"
+                  aria-label="Stop generation"
+                >
+                  <StopIcon className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="w-[60px] h-9 rounded-lg bg-[#535b69] hover:bg-[#6c7484] focus:outline-none text-white flex items-center justify-center disabled:opacity-30 transition-colors text-[11px] font-bold tracking-wider"
+                  aria-label="Send message"
+                >
+                  Ask
+                </button>
+              )}
+            </div>
+          </div>
         </form>
         <p className="text-[10px] text-zinc-600 mt-2 text-center">Responses grounded in document content · Shift+Enter for new line</p>
       </div>
@@ -426,6 +438,15 @@ function SparklesIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M19 17v4" />
       <path d="M3 5h4" />
       <path d="M17 19h4" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   );
 }
