@@ -160,21 +160,26 @@ export function ChatWindow({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#09090b] relative">
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-28 space-y-4">
+    <div className="flex flex-col h-full bg-[#FFFFFF] relative">
+      <div className="flex-1 overflow-y-auto px-5 py-5 pb-28 space-y-5 bg-[#FFFFFF]">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-start h-full py-10 px-2 mt-4">
-              <div className="w-12 h-12 bg-[#18181b] border border-white/10 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
-                <ShieldCheckIcon className="w-6 h-6 text-zinc-300" />
+            <div className="flex flex-col items-start justify-start h-full py-4 mt-2">
+              <div className="w-12 h-12 bg-[#FFF0E3] rounded-full flex flex-shrink-0 items-center justify-center mb-5 border border-[#F47B20]/10">
+                <ShieldCheckIcon className="w-6 h-6 text-[#F47B20]" />
               </div>
-              <h3 className="text-[13px] font-semibold text-zinc-100 mb-2">Contract Clause & Evidence Inquiry</h3>
-              <p className="text-[11px] text-zinc-500 mb-10 max-w-[320px] text-center leading-relaxed">
+              <h3 className="text-[24px] text-[#111111] mb-3 leading-tight max-w-[280px]" style={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                Contract Clause & Evidence Inquiry
+              </h3>
+              <p className="text-[13px] text-[#77736D] mb-8 max-w-[340px] leading-relaxed">
                 Every assertion is cross-verified against indexed document clauses with zero-trust token matching. Click verified citations to inspect exact source clauses.
               </p>
               
-              <div className="w-full max-w-sm">
-                <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-3 pl-1">Suggested Inquiries:</p>
-                <div className="space-y-2.5">
+              <div className="w-full">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-3 bg-[#F47B20] rounded-sm"></div>
+                  <p className="text-[11px] font-bold text-[#77736D] uppercase tracking-wider">Suggested Inquiries</p>
+                </div>
+                <div className="space-y-3">
                   {[
                     "What is the liability cap and financial limit?",
                     "What are the termination provisions and notice periods?",
@@ -234,10 +239,10 @@ export function ChatWindow({
                         } catch (e: any) { if (e.name !== "AbortError") console.error(e); }
                         finally { setIsLoading(false); abortControllerRef.current = null; }
                       }}
-                      className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/10 bg-[#111115] hover:bg-[#18181c] hover:border-white/20 text-xs text-zinc-300 transition-all group shadow-sm text-left"
+                      className="w-full flex items-center justify-between px-4 py-4 rounded-xl border border-[#E8E4DE] bg-[#FFFFFF] hover:border-[#F47B20]/40 text-[13px] text-[#111111] transition-all group shadow-sm text-left font-medium"
                     >
-                      <span className="font-medium">{suggestion}</span>
-                      <svg className="w-3.5 h-3.5 text-zinc-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                      <span className="leading-snug pr-4">{suggestion}</span>
+                      <svg className="w-4 h-4 text-[#F47B20] transition-transform group-hover:translate-x-1 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </button>
                   ))}
                 </div>
@@ -247,8 +252,8 @@ export function ChatWindow({
             messages.map((msg, i) => (
               <div key={msg.id || i}>
                 {msg.role === 'user' ? (
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] bg-zinc-800 border border-white/10 rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm text-zinc-200">
+                  <div className="flex justify-end mt-2">
+                    <div className="max-w-[85%] bg-[#F47B20] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-[14px] leading-snug shadow-sm">
                       {msg.content}
                     </div>
                   </div>
@@ -262,46 +267,46 @@ export function ChatWindow({
                       <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">AI</span>
                     </div>
                     {/* Message body — no card border, just good prose */}
-                    <div className="pl-7">
+                    <div className="pl-8 mt-1">
                       {/* Timeline Area (if agentic) */}
                       {msg.timeline && msg.timeline.length > 0 && (
-                        <div className="mb-3 space-y-1.5 border-l-2 border-white/5 pl-3 py-1">
+                        <div className="mb-3 space-y-1.5 border-l-2 border-[#E8E4DE] pl-3 py-1">
                           {msg.timeline.map((event: any, idx: number) => {
-                            if (event.type === 'research_started') return <div key={idx} className="text-xs text-zinc-500 font-mono">Initializing research agent...</div>;
-                            if (event.type === 'research_round') return <div key={idx} className="text-xs text-blue-500/80 font-mono mt-1">Starting Round {event.round}...</div>;
-                            if (event.type === 'agent_thinking') return <div key={idx} className="text-[11px] text-zinc-500">Agent is contemplating next steps...</div>;
+                            if (event.type === 'research_started') return <div key={idx} className="text-xs text-[#77736D] font-mono">Initializing research agent...</div>;
+                            if (event.type === 'research_round') return <div key={idx} className="text-xs text-[#1677FF] font-mono mt-1">Starting Round {event.round}...</div>;
+                            if (event.type === 'agent_thinking') return <div key={idx} className="text-[11px] text-[#77736D]">Agent is contemplating next steps...</div>;
                             if (event.type === 'tool_call') {
                               return (
-                                <div key={idx} className="text-[11px] text-emerald-500/90 flex items-center gap-1.5">
+                                <div key={idx} className="text-[11px] text-[#16A34A] flex items-center gap-1.5">
                                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                   {event.tool === 'search_document' ? `Searching context for "${event.query}"...` : (event.tool === 'get_section' ? `Retrieving section ${event.chunkId}...` : `Invoking ${event.tool}...`)}
                                 </div>
                               );
                             }
                             if (event.type === 'tool_result') {
-                              return <div key={idx} className="text-[11px] text-zinc-400 pl-4">Found {event.resultCount} relevant matches.</div>;
+                              return <div key={idx} className="text-[11px] text-[#77736D] pl-4">Found {event.resultCount} relevant matches.</div>;
                             }
                             if (event.type === 'tool_limit_reached') {
                               return (
-                                <div key={idx} className="text-[11px] text-amber-400/90 flex items-center gap-1.5 mt-1">
+                                <div key={idx} className="text-[11px] text-[#F47B20] flex items-center gap-1.5 mt-1">
                                   <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                   {event.message || "Maximum tool calls reached. Generating answer from collected evidence."}
                                 </div>
                               );
                             }
-                            if (event.type === 'research_completed') return <div key={idx} className="text-xs text-zinc-500 font-mono mt-1">Research phase complete. Synthesizing answer...</div>;
+                            if (event.type === 'research_completed') return <div key={idx} className="text-xs text-[#77736D] font-mono mt-1">Research phase complete. Synthesizing answer...</div>;
                             return null;
                           })}
                         </div>
                       )}
 
-                      <div className="text-sm leading-relaxed text-zinc-200 whitespace-pre-wrap">
+                      <div className="text-[14px] leading-relaxed text-[#111111] whitespace-pre-wrap">
                         {msg.content || (msg.loading && (!msg.timeline || msg.timeline.length === 0) && (
                           <span className="flex items-center gap-2 text-zinc-500">
                             <span className="inline-flex gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '300ms' }}></span>
                             </span>
                             Generating response…
                           </span>
@@ -316,28 +321,28 @@ export function ChatWindow({
                               key={idx}
                               disabled={!c.verified}
                               onClick={() => c.verified && onCitationClick && onCitationClick(c)}
-                              className={`flex items-start gap-2 w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors ${
+                              className={`flex items-start gap-2 w-full text-left px-3 py-2.5 rounded-lg border text-[13px] transition-colors ${
                                 c.verified
-                                  ? 'border-emerald-500/25 bg-emerald-500/[0.06] hover:bg-emerald-500/10 cursor-pointer'
-                                  : 'border-amber-500/20 bg-amber-500/[0.05] cursor-not-allowed opacity-70'
+                                  ? 'border-[#E8E4DE] bg-[#F8F6F2] hover:bg-[#F3EFE9] cursor-pointer'
+                                  : 'border-[#F47B20]/20 bg-[#FFF0E3] cursor-not-allowed opacity-80'
                               }`}
                             >
-                              <span className={`mt-0.5 shrink-0 text-[10px] font-bold ${c.verified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              <span className={`mt-0.5 shrink-0 text-[10px] font-bold ${c.verified ? 'text-[#16A34A]' : 'text-[#F47B20]'}`}>
                                 {c.verified ? '✓' : '⚠'}
                               </span>
                               <div className="min-w-0">
-                                <p className={`font-semibold ${c.verified ? 'text-emerald-300' : 'text-amber-300'}`}>
+                                <p className={`font-semibold ${c.verified ? 'text-[#111111]' : 'text-[#5E5A54]'}`}>
                                   {c.verified ? 'Verified source' : 'Unverified source'}
                                   {c.verified && c.pageStart != null ? ` · p. ${c.pageStart}` : ''}
                                 </p>
                                 {documentsMap[c.documentId] && (
-                                  <p className="text-[10px] text-zinc-500 font-medium my-0.5">{documentsMap[c.documentId]}</p>
+                                  <p className="text-[10px] text-[#77736D] font-medium my-0.5">{documentsMap[c.documentId]}</p>
                                 )}
-                                {c.quote && <p className="text-zinc-400 truncate mt-0.5">&ldquo;{c.quote}&rdquo;</p>}
-                                {!c.verified && <p className="text-amber-500/80 text-[10px] mt-0.5">Could not verify quote in document</p>}
+                                {c.quote && <p className="text-[#5E5A54] truncate mt-0.5">&ldquo;{c.quote}&rdquo;</p>}
+                                {!c.verified && <p className="text-[#F47B20]/80 text-[10px] mt-0.5">Could not verify quote in document</p>}
                               </div>
                               {c.verified && (
-                                <svg className="w-3.5 h-3.5 text-emerald-500/50 shrink-0 mt-0.5 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                <svg className="w-3.5 h-3.5 text-[#77736D] shrink-0 mt-0.5 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                               )}
                             </button>
                           ))}
@@ -353,14 +358,15 @@ export function ChatWindow({
       </div>
 
       {/* Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-gradient-to-t from-[#09090b] via-[#09090b] to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 pt-4 bg-gradient-to-t from-[#FFFFFF] via-[#FFFFFF] to-transparent">
         
         {/* Agentic Research Toggle */}
-        <div className="flex items-center justify-end mb-2 mr-1">
-          <label className="flex items-center gap-2 cursor-pointer group">
-            <span className={`text-[10px] font-semibold tracking-wide uppercase transition-colors ${useResearchMode ? 'text-blue-400' : 'text-zinc-600 group-hover:text-zinc-400'}`}>Deep Research Mode</span>
-            <div className={`relative w-8 h-4 rounded-full transition-colors ${useResearchMode ? 'bg-blue-600/50 border border-blue-500/50' : 'bg-zinc-800 border border-white/10'}`}>
-               <div className={`absolute top-[1px] w-3 h-3 rounded-full transition-transform ${useResearchMode ? 'bg-blue-400 translate-x-[15px]' : 'bg-zinc-500 translate-x-[2px]'}`}></div>
+        <div className="flex items-center justify-end mb-3">
+          <label className="flex items-center gap-2.5 cursor-pointer group hover:bg-[#F8F6F2] py-1 px-2 rounded-lg transition-colors">
+            <svg className={`w-3.5 h-3.5 ${useResearchMode ? 'text-[#F47B20]' : 'text-[#77736D]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+            <span className={`text-[11px] font-bold tracking-wide uppercase transition-colors ${useResearchMode ? 'text-[#F47B20]' : 'text-[#77736D] group-hover:text-[#5E5A54]'}`}>Deep Research Mode</span>
+            <div className={`relative w-9 h-5 rounded-full transition-colors ${useResearchMode ? 'bg-[#F47B20]' : 'bg-[#E8E4DE]'}`}>
+               <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${useResearchMode ? 'translate-x-[18px]' : 'translate-x-[2px]'}`}></div>
             </div>
             <input 
               type="checkbox" 
@@ -373,41 +379,42 @@ export function ChatWindow({
         </div>
 
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-2">
-          <div className="flex border border-white/10 rounded-xl overflow-hidden bg-[#18181b] focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+          <div className="flex border border-[#DAD6D0] rounded-[16px] overflow-hidden bg-[#FFFFFF] focus-within:border-[#F47B20] focus-within:ring-2 focus-within:ring-[#F47B20]/10 transition-all shadow-sm">
             <textarea
               disabled={isLoading}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); } }}
-              placeholder="Ask question about this document…"
+              placeholder="Ask a question about this document..."
               rows={1}
-              className="flex-1 bg-transparent px-4 py-3.5 text-sm text-zinc-200 focus:outline-none disabled:opacity-50 resize-none placeholder-zinc-600 overflow-hidden leading-tight"
-              style={{ minHeight: '46px', maxHeight: '120px' }}
+              className="flex-1 bg-transparent px-4 py-4 text-[14px] text-[#111111] focus:outline-none disabled:opacity-50 resize-none placeholder-[#77736D] overflow-hidden leading-tight"
+              style={{ minHeight: '56px', maxHeight: '140px' }}
             />
-            <div className="shrink-0 flex items-end p-1.5 self-end">
+            <div className="shrink-0 flex items-end p-2 self-end">
               {isLoading ? (
                 <button
                   type="button"
                   onClick={handleStop}
-                  className="w-[60px] h-9 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300 flex items-center justify-center transition-colors border border-white/10"
+                  className="w-10 h-10 rounded-xl bg-[#E8E4DE] hover:bg-[#DAD6D0] text-[#111111] flex items-center justify-center transition-colors shadow-sm"
                   aria-label="Stop generation"
                 >
-                  <StopIcon className="w-3.5 h-3.5" />
+                  <StopIcon className="w-4 h-4" />
                 </button>
               ) : (
                 <button
                   type="submit"
                   disabled={!input.trim()}
-                  className="w-[60px] h-9 rounded-lg bg-[#535b69] hover:bg-[#6c7484] focus:outline-none text-white flex items-center justify-center disabled:opacity-30 transition-colors text-[11px] font-bold tracking-wider"
+                  className="w-10 h-10 rounded-xl bg-[#111111] hover:bg-[#0D0D0D] focus:outline-none text-[#F47B20] flex items-center justify-center disabled:opacity-30 transition-colors shadow-sm"
                   aria-label="Send message"
                 >
-                  Ask
+                  {/* Paper airplane send icon */}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
                 </button>
               )}
             </div>
           </div>
         </form>
-        <p className="text-[10px] text-zinc-600 mt-2 text-center">Responses grounded in document content · Shift+Enter for new line</p>
+        <p className="text-[11px] text-[#77736D] mt-3 text-center">Responses grounded in document content · Shift+Enter for new line</p>
       </div>
     </div>
   );

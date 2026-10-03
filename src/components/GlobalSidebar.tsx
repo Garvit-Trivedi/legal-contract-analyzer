@@ -156,8 +156,10 @@ function NavLink({
 export function GlobalSidebar() {
   const pathname = usePathname();
 
-  // Hide inside document workspace
-  if (pathname?.startsWith("/documents/")) return null;
+  // Hide the global sidebar entirely on document detail pages for a focused workspace
+  if (pathname?.startsWith('/documents/')) {
+    return null;
+  }
 
   return (
     <aside
