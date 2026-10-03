@@ -5,16 +5,168 @@ import { ComparisonResult, ComparisonChange, ChangeSignificanceV2 } from "@/type
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ChatWindow } from "@/components/ChatWindow";
 
+// Animated loader steps shown whilst the comparison API runs
+const LOADER_STEPS = [
+  { label: "Loading document contents", duration: 1200 },
+  { label: "Normalizing text", duration: 900 },
+  { label: "Aligning paragraphs", duration: 1400 },
+  { label: "Detecting changes", duration: 1100 },
+  { label: "Classifying significance", duration: 900 },
+  { label: "Running AI analysis", duration: 0 }, // stays here until done
+];
+
+function ComparisonLoader({
+  docAName,
+  docBName,
+  onAbort,
+}: {
+  docAName: string;
+  docBName: string;
+  onAbort: () => void;
+}) {
+  const [step, setStep] = React.useState(0);
+
+  React.useEffect(() => {
+    let currentStep = 0;
+    const advance = () => {
+      const next = currentStep + 1;
+      if (next < LOADER_STEPS.length - 1) {
+        currentStep = next;
+        setStep(next);
+        const dur = LOADER_STEPS[next].duration;
+        if (dur > 0) setTimeout(advance, dur);
+      } else {
+        setStep(LOADER_STEPS.length - 1);
+      }
+    };
+    const dur = LOADER_STEPS[0].duration;
+    if (dur > 0) setTimeout(advance, dur);
+  }, []);
+
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="w-full max-w-md">
+        {/* Spinning orb */}
+        <div className="flex justify-center mb-10">
+          <div className="relative w-20 h-20">
+            {/* Outer ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-amber-500/10 border-t-amber-500 animate-spin" />
+            {/* Inner ring */}
+            <div
+              className="absolute inset-3 rounded-full border-4 border-blue-500/10 border-b-blue-500 animate-spin"
+              style={{ animationDirection: "reverse", animationDuration: "1.4s" }}
+            />
+            {/* Center dot */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
+            </div>
+          </div>
+        </div>
+
+        {/* Heading */}
+        <h3 className="text-center text-xl font-semibold text-white mb-1">
+          Comparing Documents
+        </h3>
+        <p className="text-center text-xs text-slate-500 font-mono mb-8">
+          <span className="text-emerald-400">{docAName}</span>
+          <span className="text-slate-600 mx-2">vs</span>
+          <span className="text-blue-400">{docBName}</span>
+        </p>
+
+        {/* Steps */}
+        <div className="space-y-3 mb-10">
+          {LOADER_STEPS.map((s, i) => {
+            const done = i < step;
+            const active = i === step;
+            const pending = i > step;
+
+            return (
+              <div key={i} className="flex items-center gap-3">
+                {/* Status icon */}
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
+                    done
+                      ? "bg-emerald-500/20 border border-emerald-500/50"
+                      : active
+                      ? "border-2 border-amber-500 animate-pulse"
+                      : "border border-white/10"
+                  }`}
+                >
+                  {done && (
+                    <svg className="w-3 h-3 text-emerald-400" viewBox="0 0 12 12" fill="none">
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                  {active && <div className="w-2 h-2 rounded-full bg-amber-500" />}
+                </div>
+
+                {/* Label */}
+                <span
+                  className={`text-sm transition-all duration-500 ${
+                    done
+                      ? "text-slate-500 line-through decoration-slate-700"
+                      : active
+                      ? "text-white font-medium"
+                      : "text-slate-700"
+                  }`}
+                >
+                  {s.label}
+                </span>
+
+                {/* Spinner for active */}
+                {active && (
+                  <div className="ml-auto w-3 h-3 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin flex-shrink-0" />
+                )}
+                {done && (
+                  <span className="ml-auto text-[10px] text-emerald-600 font-mono uppercase tracking-wider">
+                    done
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-6">
+          <div
+            className="h-full bg-gradient-to-r from-amber-500 to-blue-500 rounded-full transition-all duration-700"
+            style={{ width: `${((step + 1) / LOADER_STEPS.length) * 100}%` }}
+          />
+        </div>
+
+        {/* Abort */}
+        <div className="flex justify-center">
+          <button
+            onClick={onAbort}
+            className="px-4 py-1.5 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ComparisonView({
   documentAId,
   documentBId,
   documentAName = "Document A",
   documentBName = "Document B",
+  onAbort,
 }: {
   documentAId: string;
   documentBId: string;
   documentAName?: string;
   documentBName?: string;
+  onAbort?: () => void;
 }) {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<string>("");
@@ -87,16 +239,8 @@ export function ComparisonView({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-[#0a0a0b]">
-        <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-6"></div>
-        <h3 className="text-xl font-medium text-white mb-2">Analyzing Documents</h3>
-        <p className="text-sm text-slate-400 font-mono tracking-widest uppercase">{phase}</p>
-        <button
-          onClick={stopComparison}
-          className="mt-8 px-4 py-2 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
-        >
-          Abort Analysis
-        </button>
+      <div className="flex-1 flex flex-col items-center justify-center h-full w-full bg-[#0a0a0b]">
+        <ComparisonLoader docAName={documentAName} docBName={documentBName} onAbort={() => { stopComparison(); if (onAbort) onAbort(); }} />
       </div>
     );
   }
