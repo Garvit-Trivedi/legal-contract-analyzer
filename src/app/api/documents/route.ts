@@ -8,6 +8,8 @@ import { db } from "@/db";
 import { documents } from "@/db/schema";
 import { desc } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const docs = await db
