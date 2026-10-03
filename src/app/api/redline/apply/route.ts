@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { documentFiles, documents, redlineEdits } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { applyRedlinesToDocx } from "@/lib/redline/redline-engine";
-import { buildRedlineSummaryDocx } from "@/lib/redline/pdf-redline";
+import { buildFullDocxWithRedlines } from "@/lib/redline/pdf-redline";
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
+    if (!doc.extractedText) {
+      return NextResponse.json(
+        { error: "Document has not been processed yet. Please wait for indexing to complete." },
+        { status: 400 }
+      );
+    }
+
     const editsToApply = await db
       .select()
       .from(redlineEdits)
@@ -33,7 +40,7 @@ export async function POST(req: NextRequest) {
     const unverified = editsToApply.filter((e) => !e.verified);
     if (unverified.length > 0) {
       return NextResponse.json(
-        { error: `Cannot apply unverified edits: ${unverified.map((e) => e.id).join(", ")}` },
+        { error: `Cannot apply unverified edits: these could not be located in the document.` },
         { status: 400 }
       );
     }
@@ -45,33 +52,33 @@ export async function POST(req: NextRequest) {
 
     let updatedBuffer: Buffer;
     let outFilename: string;
+    let usedFallback = false;
 
     if (isDocx) {
-      // ── DOCX: Surgical XML tracked-change injection ─────────────────────
+      // ── DOCX path: try surgical XML first, fall back to full-text rebuild ──
       const [docFile] = await db
         .select()
         .from(documentFiles)
         .where(eq(documentFiles.documentId, documentId));
 
-      if (!docFile?.fileData) {
-        return NextResponse.json(
-          {
-            error:
-              "Original DOCX binary not found. Please re-upload the document to enable redlining.",
-          },
-          { status: 400 }
-        );
+      if (docFile?.fileData) {
+        // Ideal path: surgically modify original DOCX XML
+        updatedBuffer = await applyRedlinesToDocx(docFile.fileData, editsToApply);
+      } else {
+        // Fallback: rebuild full document from extracted text with tracked changes
+        // (happens for documents uploaded before file storage was introduced)
+        usedFallback = true;
+        updatedBuffer = buildFullDocxWithRedlines(doc.filename, doc.extractedText, editsToApply);
       }
 
-      updatedBuffer = await applyRedlinesToDocx(docFile.fileData, editsToApply);
       const baseName = doc.filename.replace(/\.docx$/i, "");
       outFilename = `${baseName}-redlined.docx`;
     } else {
-      // ── PDF / TXT: Generate a Redline Summary DOCX ──────────────────────
-      // PDFs cannot be surgically modified because they are not XML-editable.
-      // We generate a proper DOCX summary document with real <w:del>/<w:ins>
-      // tracked changes that can be opened in Word/LibreOffice.
-      updatedBuffer = buildRedlineSummaryDocx(doc.filename, editsToApply);
+      // ── PDF / TXT path: rebuild full document from extracted text ──────────
+      // PDFs cannot be surgically modified (not XML-editable).
+      // We generate a complete DOCX from the full extracted text with
+      // the tracked changes (w:del / w:ins) embedded at the correct location.
+      updatedBuffer = buildFullDocxWithRedlines(doc.filename, doc.extractedText, editsToApply);
       const baseName = doc.filename.replace(/\.(pdf|txt)$/i, "");
       outFilename = `${baseName}-redlined.docx`;
     }
@@ -92,9 +99,8 @@ export async function POST(req: NextRequest) {
       success: true,
       changeCount: editsToApply.length,
       isPdf: !isDocx,
-      downloadUrl: `/api/redline/download?id=${downloadId}&filename=${encodeURIComponent(
-        outFilename
-      )}`,
+      usedFallback,
+      downloadUrl: `/api/redline/download?id=${downloadId}&filename=${encodeURIComponent(outFilename)}`,
     });
   } catch (err: any) {
     console.error("Redline Apply Error:", err);

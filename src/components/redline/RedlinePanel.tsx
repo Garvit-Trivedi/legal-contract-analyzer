@@ -22,6 +22,7 @@ export function RedlinePanel({
   const [downloadFilename, setDownloadFilename] = useState<string>("redlined.docx");
   const [error, setError] = useState<string | null>(null);
   const [isPdf, setIsPdf] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
 
   const isDocx =
     fileType?.includes("wordprocessingml") ||
@@ -71,7 +72,7 @@ export function RedlinePanel({
 
       setDownloadUrl(data.downloadUrl);
       setIsPdf(!!data.isPdf);
-      // extract filename from URL
+      setUsedFallback(!!data.usedFallback);
       const urlParams = new URLSearchParams(data.downloadUrl.split("?")[1]);
       setDownloadFilename(urlParams.get("filename") || "redlined.docx");
     } catch (err: any) {
