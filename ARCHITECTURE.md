@@ -1,74 +1,101 @@
-# System Architecture
+# 🏗 System Architecture
 
-This document describes the architectural layout, data structures, and foundational paradigms implemented in the Legal Contract Analyzer. 
+The Legal Contract Analyzer utilizes a Server-heavy extraction, vectorization, and intelligence architecture to securely handle sensitive legal documents and execute Gemini AI context bounds.
 
-## High-Level Tech Stack
+## 🗄️ Database Entity-Relationship (ER) Diagram
 
-*   **Framework:** Next.js 16 (App Router paradigm)
-*   **Language:** TypeScript
-*   **Database:** PostgreSQL (hosted via Supabase)
-*   **ORM:** Drizzle ORM
-*   **Vector Engine:** `pgvector` (cosine similarity)
-*   **AI Engine:** Google Gemini (`gemini-flash-lite-latest`)
-*   **Styling:** Tailwind CSS
+The PostgreSQL / Drizzle ORM layout captures one-to-many chunking and strict relational matrices for conversations.
 
-## Core Paradigms
-
-1.  **Deterministic Bounding:** The application aggressively prevents AI hallucination. Diffs, string length offsets, and citations are evaluated using strict mathematical arrays prior to UI render. AI is strictly relegated to *interpretation* of deterministic bounds, rather than generating the boundaries themselves. 
-2.  **Stateless Streaming:** Heavy RAG interactions utilize readable server-sent event (SSE/NDJSON) streams. Connections are resilient with built-in exponential backoff fallback logic.
-3.  **Server-side Heavy:** Indexing, embedding generation, semantic retrieval, and citation substring matching occur entirely on backend Route Handlers to ensure API secrets and intellectual logic remain untampered by the client.
-
-## Database Schema (Drizzle)
-
-The PostgreSQL database leverages relational structures tied to vector embeddings:
-
-*   `documents`: Stores high-level file metadata and indexing status.
-*   `document_chunks`: Stores exact paragraph slices, page numbers, character ranges (`characterStart`, `characterEnd`), and the actual 768-dimension `embedding` vector.
-*   `conversations` / `messages`: Relational mapping saving historical chat continuity.
-*   `conversation_documents`: Junction table isolating RAG scoping.
-*   `citations`: Relational ties pointing parsed Agentic quotes directly back to the physical `document_chunks` for UI navigation.
-
-## Pipeline Topologies
-
-### 1. Ingestion Pipeline
 ```mermaid
-sequenceDiagram
-    participant User
-    participant Action as Server Action
-    participant Extractor
-    participant DB
-    participant Embedding Layer
-    
-    User->>Action: Upload File
-    Action->>Extractor: Extract Text & Pages
-    Extractor->>Action: Return Raw Text Map
-    Action->>DB: Insert Document Record
-    Action->>Action: Chunk via Character length/Delimiters
-    Action->>Embedding Layer: Generate Vectors
-    Embedding Layer-->>Action: Return Vector array
-    Action->>DB: Insert Chunks + pgvector
+erDiagram
+    DOCUMENTS ||--o{ DOCUMENT_CHUNKS : "processes into"
+    DOCUMENTS {
+        uuid id PK
+        string filename
+        string fileType
+        int fileSize
+        enum processingStatus
+    }
+    DOCUMENT_CHUNKS {
+        uuid id PK
+        uuid documentId FK
+        text content
+        int characterStart
+        int characterEnd
+        vector embedding "(768 dimensions)"
+    }
+    CONVERSATIONS ||--o{ MESSAGES : "contains"
+    CONVERSATIONS ||--o{ CONVERSATION_DOCUMENTS : "links to"
+    DOCUMENTS ||--o{ CONVERSATION_DOCUMENTS : "is queried in"
+    MESSAGES ||--o{ CITATIONS : "verifies via"
+    DOCUMENT_CHUNKS ||--o{ CITATIONS : "mapped to"
 ```
 
-### 2. Verification Pipeline
-To prevent the notorious issue of LLMs hallucinating line numbers, we apply a **Zero-Trust Retrieval Filter**:
-1. Gemini outputs `<quote>text</quote>`.
-2. The server intercepts the stream, extracting candidates.
-3. A strict substring evaluation algorithm tests the requested quote against the `document_chunks` text.
-4. If it fails due to Gemini hallucinating or shortening words, the citation is marked `verified: false`.
-5. If it passes, the exact character offset bounds inside the `document_chunk` are mathematically derived, ensuring the Client UI highlights undeniably accurate text.
+---
 
-### 3. Comparison Engine Pipeline
-The Document Comparison engine strictly eschews traditional single-prompt "Compare these documents" mechanics (which fail heavily on large texts). Instead:
-1. Both documents are recursively chunked and mapped into contiguous blocks.
-2. An algorithmic alignment function groups similar blocks via distance heuristics.
-3. Missing or altered blocks are strictly classified into `ADDED`, `REMOVED`, or `MODIFIED`.
-4. The isolated `MODIFIED` blocks are grouped and batch-sent to the Gemini reasoning engine for explicit significance classification (HIGH/MEDIUM/LOW risk impact) and plain text summarization.
-5. `NumberChanges`, `DateChanges`, and `MoneyChanges` use deterministic RegEx matching *before* AI interaction.
+## ⚙️ Component Flow: Document Comparison Engine
 
-## Frontend UI Organization
+Instead of relying on AI to blindly "compare" two documents—which notoriously leads to hallucinated data strings—this application utilizes a layered **Structural Deterministic Diffing** algorithm before handing off to the Agentic engine.
 
-The User Interface employs a modern forensic layout:
-*   `Dashboard`: Multi-select grids allowing users to spawn RAG or Comparison pipelines seamlessly.
-*   `ChatWindow`: Pinned right-side console handling streaming NDJSON blocks and rendering verified semantic anchors.
-*   `DocumentViewer`: Core abstraction handling native `scrollTop` math and semantic HTML visual decorators (`<ins>`, `<del>`, `<mark>`).
-*   `ComparisonView`: The 4-column workspace unifying all core systems into a highly dense information dashboard.
+### Sequence Analysis
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant CV as ComparisonView (Client)
+    participant API as /api/compare (Server)
+    participant DE as Diff Engine
+    participant AI as Gemini API
+
+    U->>CV: Select Doc A & Doc B
+    CV->>API: POST { documentAId, documentBId }
+    API->>DE: Fetch exact DB Chunks for A & B
+    DE->>DE: Reconstruct normalized full texts
+    DE->>DE: Execute diff-match-patch algorithms
+    DE->>DE: Classify strings: ADDED, REMOVED, MODIFIED
+    DE->>DE: Run Regex bounds (Numbers, Dates, Money)
+    DE->>AI: Send grouped MODIFIED clauses for semantic context
+    AI-->>DE: Return Significance (HIGH/MED/LOW) & Explanations
+    DE-->>API: Compose heavily-structured JSON Payload
+    API-->>CV: Return final payload
+    CV->>U: Render Synchronized Scrolling Workspace
+```
+
+---
+
+## 🔐 Zero-Trust Citation Verification
+
+Most RAG (Retrieval-Augmented Generation) applications blindly trust LLM-generated page numbers or coordinates. This architecture explicitly denies the AI from mapping its own UI coordinates. 
+
+**Workflow:**
+1. LLM Prompt enforces bounding quotes: `<quote>Found text</quote>`.
+2. The Server intercepts the streaming NDJSON stream.
+3. A Regex extractor strips the quotes.
+4. A Levenshtein-distance fallback algorithm tests the Quote strictly against the exact `document_chunks` returned during original Retrieval.
+5. **Only if verified**: The database offset (`characterStart` + `characterEnd`) is appended to the payload.
+6. The Client `DocumentViewer.tsx` ignores all logic other than mathematically mapping the raw character offset down the DOM tree.
+
+---
+
+## 📂 Physical Directory Map
+
+```text
+src/
+├── app/
+│   ├── api/                # Core Serverless Boundaries
+│   │   ├── compare/        # Deep Document Diff Engine
+│   │   ├── chat/           # RAG SSE Stream handling
+│   │   ├── research/       # Isolated Comparison-Chat Engine
+│   │   └── documents/      # Ingestion & Extraction endpoints
+│   └── page.tsx            # unified Application Dashboard
+├── components/
+│   ├── ChatWindow.tsx      # RAG/Agentic UI
+│   ├── ComparisonView.tsx  # 4-Column Forensic Workspace
+│   └── DocumentViewer.tsx  # Offset-driven Highlighting container
+├── db/
+│   └── schema.ts           # Drizzle Postgres layout (pgvector)
+└── lib/
+    ├── ai/                 # Gemini Client & Verification Math
+    ├── comparison/         # Diff-Match-Patch heuristics
+    └── document/           # Text Extraction (PDF.js / Mammoth)
+```

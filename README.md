@@ -1,101 +1,113 @@
-# Legal Contract Analyzer
+# Legal Contract Analyzer ⚖️
 
-An AI-powered legal-document analysis application designed to provide forensic, evaluator-ready insights into legal contracts. This tool allows users to upload documents, perform semantic search, ask grounded questions, and conduct deep agentic comparisons between contract versions with strict citation verification.
+<div align="center">
+  <h3>Forensic Document Analysis & Agentic Smart Comparison</h3>
+  <p>A production-ready AI Legal Assistant ensuring zero-hallucination citations and deep structural contract comparisons.</p>
 
-![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
-![pgvector](https://img.shields.io/badge/pgvector-000000?logo=postgresql&logoColor=white)
-![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?logo=google&logoColor=white)
-![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-C5F74F?logo=drizzle&logoColor=black)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)
+  ![Next.js](https://img.shields.io/badge/Next.js-16.3-black?logo=next.js&logoColor=white)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript&logoColor=white)
+  ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
+  ![pgvector](https://img.shields.io/badge/pgvector-Cosine_Sim-000000?logo=postgresql&logoColor=white)
+  ![Gemini Flash](https://img.shields.io/badge/Gemini_Flash-Lite-8E75B2?logo=google&logoColor=white)
+  ![Drizzle](https://img.shields.io/badge/Drizzle_ORM-Verified-C5F74F?logo=drizzle&logoColor=black)
+</div>
 
-## What The Application Does
+---
 
-The Legal Contract Analyzer provides a complete, end-to-end journey from raw document ingestion to multi-document agentic research. 
+## 🌟 Visual Workflow Journey
 
-Every interaction strictly prioritizes zero-hallucination policies, bounding all AI feedback strictly to source texts and verifiable character offsets. 
+The application strictly bounds all AI responses to verifiable extraction layers. The entire lifecycle—from upload to chat—is captured below.
 
 ```mermaid
-flowchart LR
-    A[Upload PDF/DOCX/TXT]
-    B[Extract Text & Metadata]
-    C[Chunk by Paragraph]
-    D[Generate Embeddings]
-    E[(Postgres + pgvector)]
-    F[Semantic Retrieval]
-    G[Gemini Flash]
-    H[Verified RAG Answer]
-    I[Exact Citations]
-    J[Document UI Highlighting]
+flowchart TD
+    %% Styling
+    classDef user fill:#2563eb,stroke:#fff,stroke-width:2px,color:#fff
+    classDef ai fill:#7e22ce,stroke:#fff,stroke-width:2px,color:#fff
+    classDef db fill:#059669,stroke:#fff,stroke-width:2px,color:#fff
+    classDef ui fill:#475569,stroke:#fff,stroke-width:2px,color:#fff
 
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
-    I --> J
+    subgraph "1. Ingestion Layer"
+    U([User Uploads PDF/DOCX]):::user --> E[Text & Page Extraction]
+    E --> C[Paragraph Chunking]
+    C --> V[Generate Vector Embeddings]:::ai
+    V --> DB[(PostgreSQL + pgvector)]:::db
+    end
+
+    subgraph "2. Retrieval & Verification Layer"
+    UQ([User asks Question]):::user --> SR[Semantic Similarity Search]
+    DB --> SR
+    SR --> GM[Gemini RAG Analysis]:::ai
+    GM --> VF{Substring Extraction & Verification Matrix}
+    end
+
+    subgraph "3. Forensic UI Layer"
+    VF -- Passes --> H[Returns Precise Character Offsets]
+    VF -- Fails --> NH[Returns Unverified Fallback Text]
+    H --> UI[UI Renders 4-Column Workspace]:::ui
+    UI --> J[User clicks citation ➔ Triggers auto-scroll to exact offset]:::user
+    end
 ```
 
-### Core Features
+---
 
-1. **Document Ingestion Layer:** Safely uploads, extracts, chunks, and semantically embeds PDF, DOCX, and TXT files directly to PostgreSQL.
-2. **Semantic RAG Chat:** Ask questions regarding single or multiple documents via a highly-tuned Retrieval-Augmented Generation pipeline.
-3. **Strict Citation Verification:** AI-generated quotes are intercepted securely on the server, tested via strict substring matching, and converted into exact offset boundaries for highlight-navigation.
-4. **Document Comparison Workspace:** A 4-column forensic workspace comparing two versions of a contract side-by-side.
-5. **Deterministic Alignment:** Text changes are aligned structurally (Added, Removed, Modified), preventing AI hallucination of diffs.
-6. **Agentic Research Chat:** An isolated chat stream scoping analysis strictly to two compared versions, extracting high-impact discrepancies (like monetary or probationary alterations).
-7. **Synchronized Scrolling:** Employs normalized proportional scrolling that effortlessly interlocks distinct document versions based on structural anchors.
+## 🛠 Feature Matrices
 
-## How It Works
+### Part A: Core Document RAG
+| Status | Feature | Implementation Detail |
+| :---: | :--- | :--- |
+| ✅ | **File Ingestion** | Extracts PDF, DOCX, and TXT directly to chunks |
+| ✅ | **Vector Storage** | Drizzle ORM pushing float arrays to `pgvector` |
+| ✅ | **RAG Chat** | Server-Sent Event (SSE) streaming with Gemini |
+| ✅ | **Verified Quotes** | String-matching intercepts AI quotes to map exact DB offsets |
+| ✅ | **Failure Handlers** | Discards empty Scans gracefully without crashing |
 
-1. **Data Layer:** Documents are processed with standard extraction libraries (PDF.js/Mammoth) and pushed chunk-by-chunk to Supabase via Drizzle ORM.
-2. **Retrieval Layer:** The `pgvector` extension facilitates native cosine-similarity vector searches against Gemini-generated text embeddings.
-3. **Intelligence Layer:** Google's Gemini acts as the reasoning engine for chat, executing instructions with strict grounding parameters.
-4. **Presentation Layer:** Next.js Server Components and advanced Client Components render smooth, dynamic forensic workspaces. Text highlights utilize strict DOM `characterStart` tracking instead of unreliable AI-generated page numbers.
+### Part B: Comparison Engine
+| Status | Feature | Implementation Detail |
+| :---: | :--- | :--- |
+| ✅ | **Side-by-Side** | Two synchronized `DocumentViewer` panes in a dark workspace |
+| ✅ | **Sync Scrolling** | Mathematical ratio calculation preventing CSS lock-loops |
+| ✅ | **Accessibility** | Strict `<del>` and `<ins>` tags eliminating color dependence |
+| ✅ | **Agentic Isolation** | Chat physically scoped strictly to the two compared documents |
+| ✅ | **Significance Filter**| AI classifies explicit diffs into HIGH / MEDIUM / LOW risks |
 
-## Getting Started
+---
 
-### Prerequisites
+## 🚀 Getting Started
 
-- Node.js (v18+)
-- PostgreSQL Database with `pgvector` enabled (e.g., Supabase)
-- Google Gemini API Key
+To operate this application locally, you must provide your own Postgres and Gemini credentials.
 
-### Local Setup
-
-1. **Clone and Install:**
-```bash
-npm install
-```
-
-2. **Configure Environment:**
-Create a `.env.local` based on `.env.example`:
+### 1. Environment Configuration
+Create a `.env.local` containing:
 ```env
-DATABASE_URL="postgres://your-postgres-url"
-GEMINI_API_KEY="your-gemini-key"
+# Database (Must contain pgvector extension)
+DATABASE_URL="postgres://username:password@aws-0-postgres.supabase.com:6543/postgres"
+
+# AI Inference
+GEMINI_API_KEY="your-google-studio-api-key"
 GEMINI_MODEL="gemini-flash-lite-latest"
 ```
 
-3. **Database Migration:**
+### 2. Execution Run-book
 ```bash
-npm run db:push
-```
+# 1. Install dependencies
+npm install
 
-4. **Run the Development Server:**
-```bash
+# 2. Push Schema to Database
+npm run db:push
+
+# 3. Spin up Turbopack Server
 npm run dev
 ```
 
-Visit `http://localhost:3000` to interact with the dashboard.
+The application mounts immediately at `http://localhost:3000`.
 
-## What To Test
+---
 
-Evaluators operating this repository should specifically verify:
+## 🔬 How To Evaluate
 
-- **Ingestion:** Upload a multi-page PDF and verify real-time processing feedback.
-- **RAG Integrity:** Ask a specific question and click the generated citation to ensure it instantly scrolls and highlights the raw chunk.
-- **Side-by-Side Comparison:** Upload two slightly varied version of a DOCX. Observe the Agentic engine flag monetary, numerical, or date alterations explicitly in the sidebar. Validate synchronized scrolling and strictly non-color indicator accessibility adjustments (underline/strikethrough).
+For engineering or architectural review, follow this rigid test path:
+
+1. **Upload & Extract:** Upload a multi-page legal DOCX. Observe the DB index vectors in real-time.
+2. **Interact:** Ask the Chat a specific question found on Page 3. 
+3. **Verify Bounds:** Click the generated citation in the Chat. Watch the `DocumentViewer` immediately scroll to highlight the exact text bounds *(without guessing page coordinates)*.
+4. **Compare:** Upload a `V2` of the same document featuring altered money values and missing clauses. Run the **Comparison Simulator** and verify that monetary deviations flag as **HIGH** risk impacts within the Left Sidebar navigation tree.
