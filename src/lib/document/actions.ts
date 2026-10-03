@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "../../db";
-import { documents, documentChunks } from "../../db/schema";
+import { documents, documentChunks, documentFiles } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { extractTextFromFile, ExtractionError } from "./extraction";
 import { chunkExtractedPages } from "./chunking";
@@ -91,8 +91,20 @@ export async function processDocument(documentId: string, buffer: Buffer, extens
           updatedAt: new Date(),
         })
         .where(eq(documents.id, documentId));
+        
+
     });
     const tDbEnd = performance.now();
+
+    // ── Save raw bytes for redlining (DOCX only, best-effort) ────────────
+    if (extension === "docx") {
+      try {
+        await db.delete(documentFiles).where(eq(documentFiles.documentId, documentId));
+        await db.insert(documentFiles).values({ documentId, fileData: buffer });
+      } catch (err) {
+        console.warn("[processDocument] Could not save raw bytes (tables may not exist yet):", err);
+      }
+    }
 
     // ── Phase 4: Semantic Indexing ────────────────────────────────────────
     const tIndexStart = performance.now();

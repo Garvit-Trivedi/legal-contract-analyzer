@@ -4,6 +4,8 @@ export * from "./conversations";
 export * from "./conversationDocuments";
 export * from "./messages";
 export * from "./citations";
+export * from "./documentFiles";
+export * from "./redlines";
 
 import { relations } from "drizzle-orm";
 import { documents } from "./documents";

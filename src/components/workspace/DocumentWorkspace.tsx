@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChatWindow } from "@/components/ChatWindow";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { RedlinePanel } from "@/components/redline/RedlinePanel";
 import { getConversations } from "@/lib/ai/chat.actions";
 import { deleteDocument } from "@/lib/document/actions";
 import { useRouter } from "next/navigation";
@@ -45,6 +46,7 @@ function DocumentWorkspaceContent({ document }: { document: any }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [showRedline, setShowRedline] = useState(false);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // Close more-menu when clicking outside
@@ -192,6 +194,34 @@ function DocumentWorkspaceContent({ document }: { document: any }) {
             Compare
           </Link>
 
+          {/* Redline Contract — all document types */}
+          <button
+              onClick={() => setShowRedline(v => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: showRedline ? "#FFFFFF" : "#DC2626",
+                background: showRedline ? "#DC2626" : "#FEF2F2",
+                border: "1px solid #FECACA",
+                padding: "8px 16px",
+                borderRadius: "10px",
+                transition: "all 0.15s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={e => { if (!showRedline) { e.currentTarget.style.background = "#FEE2E2"; } }}
+              onMouseLeave={e => { if (!showRedline) { e.currentTarget.style.background = "#FEF2F2"; } }}
+              aria-label="Open Redline Contract panel"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              {showRedline ? "Close Redline" : "Redline Contract"}
+            </button>
+
           {/* More menu */}
           <div className="relative" ref={moreMenuRef}>
             <button
@@ -273,19 +303,28 @@ function DocumentWorkspaceContent({ document }: { document: any }) {
           />
         </div>
 
-        {/* ── RIGHT: AI Chat Panel ── */}
-        <div className="shrink-0 flex flex-col overflow-hidden" style={{ width: "32%", minWidth: "320px", maxWidth: "440px", background: "#FFFFFF", borderRadius: "16px", border: "1px solid #E8E4DE", boxShadow: "0 4px 24px rgba(17,17,17,0.02)" }}>
-          <ChatPanel
-            document={document}
-            conversations={conversations}
-            activeConversationId={activeConversationId}
-            setActiveConversationId={setActiveConversationId}
-            onCitationClick={handleCitationClick}
-            onConversationCreated={(id) => {
-              setActiveConversationId(id);
-              fetchConversations();
-            }}
-          />
+        {/* ── RIGHT: AI Chat Panel or Redline Panel ── */}
+        <div className="shrink-0 flex flex-col overflow-hidden" style={{ width: "32%", minWidth: "320px", maxWidth: "440px", background: "#FFFFFF", borderRadius: "16px", border: `1px solid ${showRedline ? "#FECACA" : "#E8E4DE"}`, boxShadow: "0 4px 24px rgba(17,17,17,0.02)" }}>
+          {showRedline ? (
+            <RedlinePanel
+              documentId={document.id}
+              fileType={document.fileType}
+              filename={document.filename}
+              onClose={() => setShowRedline(false)}
+            />
+          ) : (
+            <ChatPanel
+              document={document}
+              conversations={conversations}
+              activeConversationId={activeConversationId}
+              setActiveConversationId={setActiveConversationId}
+              onCitationClick={handleCitationClick}
+              onConversationCreated={(id) => {
+                setActiveConversationId(id);
+                fetchConversations();
+              }}
+            />
+          )}
         </div>
       </main>
 
