@@ -181,11 +181,63 @@ export function ComparisonView({
   // Selection state
   const [selectedChangeId, setSelectedChangeId] = useState<string | null>(null);
 
-  // Synchronized scrolling refs
+  // Synchronized scrolling state
   const paneARef = useRef<HTMLDivElement>(null);
   const paneBRef = useRef<HTMLDivElement>(null);
   const isHoveringA = useRef(false);
   const isHoveringB = useRef(false);
+  const [syncScroll, setSyncScroll] = useState(true);
+  const [lenA, setLenA] = useState(1);
+  const [lenB, setLenB] = useState(1);
+
+  // Derive mapped scrolling function
+  const handleScroll = (source: 'A' | 'B', e: React.UIEvent<HTMLDivElement>) => {
+    if (!syncScroll || !result || result.changes.length === 0) return;
+    
+    if (source === 'A' && isHoveringB.current) return;
+    if (source === 'B' && isHoveringA.current) return;
+
+    const A = paneARef.current;
+    const B = paneBRef.current;
+    if (!A || !B) return;
+
+    const sourceEl = source === 'A' ? A : B;
+    const targetEl = source === 'A' ? B : A;
+    const sourceLen = source === 'A' ? lenA : lenB;
+    const targetLen = source === 'A' ? lenB : lenA;
+
+    // Fast path: if identical lengths somehow or no changes, fallback to proportion
+    const sourceRatio = sourceEl.scrollTop / (sourceEl.scrollHeight - sourceEl.clientHeight || 1);
+    const sourceCharIdx = sourceRatio * sourceLen;
+
+    // Find the closest change in the source document
+    let closestChange = null;
+    let minDiff = Infinity;
+    
+    for (const change of result.changes) {
+      const loc = source === 'A' ? change.beforeLocation : change.afterLocation;
+      if (!loc) continue;
+      const diff = Math.abs(loc.characterStart - sourceCharIdx);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestChange = change;
+      }
+    }
+
+    if (closestChange) {
+      // Map it to target location
+      const targetLoc = source === 'A' ? closestChange.afterLocation : closestChange.beforeLocation;
+      if (targetLoc) {
+        const targetRatio = targetLoc.characterStart / (targetLen || 1);
+        targetEl.scrollTop = targetRatio * (targetEl.scrollHeight - targetEl.clientHeight);
+      } else {
+        // Fallback to proportional if change is unbalanced
+        targetEl.scrollTop = sourceRatio * (targetEl.scrollHeight - targetEl.clientHeight);
+      }
+    } else {
+       targetEl.scrollTop = sourceRatio * (targetEl.scrollHeight - targetEl.clientHeight);
+    }
+  };
 
   useEffect(() => {
     runComparison();
@@ -298,12 +350,21 @@ export function ComparisonView({
   return (
     <div className="flex-1 flex flex-col min-h-0 w-full bg-[#09090b] text-zinc-300">
       {/* Metrics Row */}
-      <div className="flex gap-4 p-5 border-b border-white/10 shrink-0 bg-[#0b0b0e] overflow-x-auto custom-scrollbar">
-         <MetricCard label="TOTAL CLAUSES" value={result.stats.total} color="text-white" borderClr="border-white/10" />
-         <MetricCard label="SUBSTANTIVE CHANGES" value={aStat.mods} color="text-amber-500" borderClr="border-amber-500/20" />
-         <MetricCard label="HIGH RISK IMPACT" value={filteredChanges.filter(c => c.significance === 'HIGH').length} color="text-red-500" borderClr="border-red-500/20" />
-         <MetricCard label="ADDED CLAUSES" value={`+${aStat.adds}`} color="text-emerald-500" borderClr="border-emerald-500/20" />
-         <MetricCard label="DELETED CLAUSES" value={`-${aStat.dels}`} color="text-slate-400" borderClr="border-slate-500/20" />
+      <div className="flex gap-4 p-5 border-b border-white/10 shrink-0 bg-[#0b0b0e] overflow-x-auto custom-scrollbar justify-between items-center group">
+         <div className="flex gap-4 flex-1">
+           <MetricCard label="TOTAL CLAUSES" value={result.stats.total} color="text-white" borderClr="border-white/10" />
+           <MetricCard label="SUBSTANTIVE CHANGES" value={aStat.mods} color="text-amber-500" borderClr="border-amber-500/20" />
+           <MetricCard label="HIGH RISK IMPACT" value={filteredChanges.filter(c => c.significance === 'HIGH').length} color="text-red-500" borderClr="border-red-500/20" />
+           <MetricCard label="ADDED CLAUSES" value={`+${aStat.adds}`} color="text-emerald-500" borderClr="border-emerald-500/20" />
+           <MetricCard label="DELETED CLAUSES" value={`-${aStat.dels}`} color="text-slate-400" borderClr="border-slate-500/20" />
+         </div>
+         
+         <div className="px-4 shrink-0 flex items-center justify-center">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-300 cursor-pointer select-none transition-colors">
+              <input type="checkbox" checked={syncScroll} onChange={e => setSyncScroll(e.target.checked)} className="accent-blue-500 w-3.5 h-3.5 rounded" />
+              Sync Scrolling
+            </label>
+         </div>
       </div>
 
       {/* 4-Column Layout Workspace */}
@@ -361,7 +422,11 @@ export function ComparisonView({
         {/* Viewers Area */}
         <div className="flex-1 flex min-w-0">
            {/* Pane A */}
-           <div className="flex-1 border-r border-white/10 flex flex-col min-w-0">
+           <div 
+             className="flex-1 border-r border-white/10 flex flex-col min-w-0 bg-[#0d0d10]"
+             onMouseEnter={() => { isHoveringA.current = true; }}
+             onMouseLeave={() => { isHoveringA.current = false; }}
+           >
              <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
                <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70 truncate px-4" title={documentAName}>Version A: {documentAName}</span>
              </div>
@@ -372,12 +437,19 @@ export function ComparisonView({
                   characterEnd={activeChange?.beforeLocation?.characterEnd ?? null}
                   highlightColor={activeChange?.type === "REMOVED" ? "rose" : "amber"}
                   onClose={() => setSelectedChangeId(null)}
+                  scrollContainerRef={paneARef}
+                  onScroll={e => handleScroll('A', e)}
+                  onTextLoaded={setLenA}
                 />
              </div>
            </div>
 
            {/* Pane B */}
-           <div className="flex-1 flex flex-col min-w-0">
+           <div 
+             className="flex-1 flex flex-col min-w-0 bg-[#0d0d10]"
+             onMouseEnter={() => { isHoveringB.current = true; }}
+             onMouseLeave={() => { isHoveringB.current = false; }}
+           >
              <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
                <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70 truncate px-4" title={documentBName}>Version B: {documentBName}</span>
              </div>
@@ -388,6 +460,9 @@ export function ComparisonView({
                   characterEnd={activeChange?.afterLocation?.characterEnd ?? null}
                   highlightColor={activeChange?.type === "ADDED" ? "emerald" : "amber"}
                   onClose={() => setSelectedChangeId(null)}
+                  scrollContainerRef={paneBRef}
+                  onScroll={e => handleScroll('B', e)}
+                  onTextLoaded={setLenB}
                 />
              </div>
            </div>

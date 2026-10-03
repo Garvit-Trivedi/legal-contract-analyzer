@@ -11,7 +11,8 @@ interface DocumentViewerProps {
   totalPages?: number | null;
   highlightColor?: "amber" | "emerald" | "rose";
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
-  scrollContainerRef?: React.Ref<HTMLDivElement>;
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+  onTextLoaded?: (textLength: number) => void;
 }
 
 export function DocumentViewer({ 
@@ -23,6 +24,7 @@ export function DocumentViewer({
   highlightColor = "amber",
   onScroll,
   scrollContainerRef,
+  onTextLoaded,
 }: DocumentViewerProps) {
   const [text, setText] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -36,11 +38,13 @@ export function DocumentViewer({
     if (documentId) {
       setLoading(true);
       getDocumentText(documentId).then(t => {
-        setText(t || "");
+        const fullText = t || "";
+        setText(fullText);
+        if (onTextLoaded) onTextLoaded(fullText.length);
         setLoading(false);
       });
     }
-  }, [documentId]);
+  }, [documentId, onTextLoaded]);
 
   // Scroll to citation highlight whenever it changes
   useEffect(() => {
@@ -96,15 +100,19 @@ export function DocumentViewer({
       // Determine highlight classes based on highlightColor prop
       let hlBg = "bg-amber-500/25";
       let hlBorder = "border-amber-500/50";
+      let textDecoration = "";
+      
       if (highlightColor === "emerald") {
         hlBg = "bg-emerald-500/25";
         hlBorder = "border-emerald-500/50";
+        textDecoration = "underline decoration-emerald-500/50 decoration-2 underline-offset-2";
       } else if (highlightColor === "rose") {
         hlBg = "bg-rose-500/25";
         hlBorder = "border-rose-500/50";
+        textDecoration = "line-through decoration-rose-500/50 decoration-2";
       }
       
-      const citeClass = `citation-highlight text-zinc-100 ${hlBg} border-b-2 ${hlBorder} rounded-[2px] transition-all px-0.5`;
+      const citeClass = `citation-highlight text-zinc-100 ${hlBg} border-b-2 ${hlBorder} rounded-[2px] transition-all px-0.5 ${textDecoration}`;
 
       // Also apply search highlights within segments
       const segments: React.ReactNode[] = [];
@@ -125,7 +133,7 @@ export function DocumentViewer({
           const found = lower.indexOf(q, last);
           if (found === -1) { parts.push(<span key={`${keyPfx}-t${si}`}>{chunk.slice(last)}</span>); break; }
           parts.push(<span key={`${keyPfx}-t${si}`}>{chunk.slice(last, found)}</span>);
-          parts.push(<mark key={`${keyPfx}-s${si}`} className="search-highlight bg-blue-400/30 border-b border-blue-400">{chunk.slice(found, found + q.length)}</mark>);
+          parts.push(<mark key={`${keyPfx}-s${si}`} className="search-highlight bg-blue-400/30 border-b border-blue-400 text-inherit">{chunk.slice(found, found + q.length)}</mark>);
           last = found + q.length;
           si++;
         }
@@ -241,15 +249,22 @@ export function DocumentViewer({
 
       {/* Citation banner */}
       {characterStart != null && (
-        <div className={`shrink-0 border-b px-4 py-2 flex items-center gap-2 ${
+        <div className={`shrink-0 border-b px-4 py-2 flex items-center justify-between gap-2 ${
           highlightColor === "emerald" 
             ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
             : highlightColor === "rose"
             ? "bg-rose-500/10 border-rose-500/20 text-rose-300"
             : "bg-amber-500/10 border-amber-500/20 text-amber-300"
         }`}>
-          <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <p className="text-[11px] font-medium tracking-tight">Source block mapped — see highlighted text below</p>
+          <div className="flex items-center gap-2">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <p className="text-[11px] font-medium tracking-tight">Source block mapped — see highlighted text below</p>
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[9px] uppercase font-bold tracking-wider">
+            {highlightColor === "emerald" && <span>[+] ADDED</span>}
+            {highlightColor === "rose" && <span>[-] REMOVED</span>}
+            {highlightColor === "amber" && <span>[↻] MODIFIED</span>}
+          </div>
         </div>
       )}
 
