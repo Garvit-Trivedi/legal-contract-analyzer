@@ -71,7 +71,12 @@ function DocumentWorkspaceContent({ document }: { document: any }) {
         c.conversationDocuments[0].documentId === document.id
     );
     setConversations(docConvs);
-  }, [document.id]);
+    
+    // Automatically select the most recent conversation if one exists and none is currently active
+    if (!activeConversationId && docConvs.length > 0) {
+      setActiveConversationId(docConvs[0].id);
+    }
+  }, [document.id, activeConversationId]);
 
   useEffect(() => {
     fetchConversations();
