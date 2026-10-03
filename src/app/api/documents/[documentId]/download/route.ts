@@ -30,7 +30,7 @@ export async function GET(
       return NextResponse.json({ error: "Document not found." }, { status: 404 });
     }
 
-    if (doc.processingStatus !== "completed" || !doc.extractedText) {
+    if ((doc.processingStatus !== "completed" && doc.processingStatus !== "ready") || !doc.extractedText) {
       return NextResponse.json(
         { error: "Document text is not yet available. Please wait for processing to complete." },
         { status: 409 }

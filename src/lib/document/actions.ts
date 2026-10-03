@@ -10,88 +10,115 @@ import { indexDocument } from "../ai/retrieval";
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-export async function processUploadedDocument(formData: FormData) {
-  const file = formData.get("file") as File;
-  if (!file) {
-    throw new Error("No file uploaded.");
+// ─────────────────────────────────────────────────────────────────────────────
+// Magic-byte validation (spoofing-resistant)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function detectFileTypeFromBuffer(buffer: Buffer): "pdf" | "docx" | "txt" | null {
+  // PDF: %PDF  (25 50 44 46)
+  if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
+    return "pdf";
   }
-
-  const extension = file.name.split('.').pop()?.toLowerCase() || "";
-  const isValidPdf = extension === "pdf";
-  const isValidDocx = extension === "docx";
-  const isValidTxt = extension === "txt";
-
-  if (!isValidPdf && !isValidDocx && !isValidTxt) {
-    throw new Error(`Unsupported file type: ${file.name}. Please upload a PDF, DOCX, or TXT file.`);
+  // DOCX/ZIP: PK\x03\x04  (50 4B 03 04)
+  if (buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) {
+    return "docx";
   }
+  // TXT: treat any readable UTF-8 content as txt
+  return "txt";
+}
 
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error("File exceeds the maximum limit of 50MB.");
-  }
+// ─────────────────────────────────────────────────────────────────────────────
+// Background processor — called by the upload Route Handler via after()
+// Not a Server Action; exported as a plain async function.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // 2. Initial DB Record
-  const [initalDoc] = await db
-    .insert(documents)
-    .values({
-      filename: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      processingStatus: "processing",
-    })
-    .returning();
+export async function processDocument(documentId: string, buffer: Buffer, extension: string) {
+  const perfStart = performance.now();
 
   try {
-    // 3. Extraction
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const extractionResult = await extractTextFromFile(buffer, extension);
-    
-    // 4. Chunking
-    const { fullNormalizedText, chunks } = chunkExtractedPages(extractionResult.pages);
+    // ── Phase 1: Extracting ────────────────────────────────────────────────
+    await db
+      .update(documents)
+      .set({ processingStatus: "extracting", updatedAt: new Date() })
+      .where(eq(documents.id, documentId));
 
-    // 5. Database Persistence within a Transaction
+    const tParseStart = performance.now();
+    const extractionResult = await extractTextFromFile(buffer, extension);
+    const tParseEnd = performance.now();
+
+    // ── Phase 2: Chunking ─────────────────────────────────────────────────
+    await db
+      .update(documents)
+      .set({ processingStatus: "chunking", updatedAt: new Date() })
+      .where(eq(documents.id, documentId));
+
+    const tChunkStart = performance.now();
+    const { fullNormalizedText, chunks } = chunkExtractedPages(extractionResult.pages);
+    const tChunkEnd = performance.now();
+
+    // ── Phase 3: Atomic DB Persistence ───────────────────────────────────
+    const tDbStart = performance.now();
     await db.transaction(async (tx) => {
-      // Safely ensure no stale chunks just in case
-      await tx.delete(documentChunks).where(eq(documentChunks.documentId, initalDoc.id));
+      // Idempotency: clear any stale chunks first
+      await tx.delete(documentChunks).where(eq(documentChunks.documentId, documentId));
 
       if (chunks.length > 0) {
-        // Insert chunks
-        await tx.insert(documentChunks).values(
-          chunks.map((chunk) => ({
-            documentId: initalDoc.id,
-            chunkIndex: chunk.chunkIndex,
-            text: chunk.text,
-            pageStart: chunk.pageStart,
-            pageEnd: chunk.pageEnd,
-            characterStart: chunk.characterStart,
-            characterEnd: chunk.characterEnd,
-            embedding: null, // explicit per instructions
-          }))
-        );
+        const CHUNK_INSERT_BATCH = 100; // Prevent Postgres parameter overflow
+        for (let i = 0; i < chunks.length; i += CHUNK_INSERT_BATCH) {
+          const batch = chunks.slice(i, i + CHUNK_INSERT_BATCH);
+          await tx.insert(documentChunks).values(
+            batch.map((chunk) => ({
+              documentId,
+              chunkIndex: chunk.chunkIndex,
+              text: chunk.text,
+              pageStart: chunk.pageStart,
+              pageEnd: chunk.pageEnd,
+              characterStart: chunk.characterStart,
+              characterEnd: chunk.characterEnd,
+              embedding: null,
+            }))
+          );
+        }
       }
 
-      // Mark completed
+      // Mark as "ready" (text extracted + chunked, indexing not yet done)
       await tx
         .update(documents)
         .set({
+          processingStatus: "ready",
           extractedText: fullNormalizedText,
-          processingStatus: "completed",
+          totalChunks: chunks.length,
           updatedAt: new Date(),
         })
-        .where(eq(documents.id, initalDoc.id));
+        .where(eq(documents.id, documentId));
     });
+    const tDbEnd = performance.now();
 
-    try { revalidatePath("/"); } catch(e) {}
-    
-    // Fire indexing process asynchronously without waiting
-    indexDocument(initalDoc.id).catch((indexErr) => {
-      console.error("Indexing failed for document", initalDoc.id, indexErr);
-    });
+    // ── Phase 4: Semantic Indexing ────────────────────────────────────────
+    const tIndexStart = performance.now();
+    await indexDocument(documentId, chunks.length);
+    const tIndexEnd = performance.now();
 
-    return { success: true, documentId: initalDoc.id };
+    console.log(`
+--- PERFORMANCE METRICS ---
+Document ID: ${documentId} (${extension})
+Pages: ${extractionResult.pages.length}
+Chunks: ${chunks.length}
+---------------------------
+Parse:           ${((tParseEnd - tParseStart) / 1000).toFixed(2)}s
+Chunk:           ${((tChunkEnd - tChunkStart) / 1000).toFixed(2)}s
+DB Insert:       ${((tDbEnd - tDbStart) / 1000).toFixed(2)}s
+Retrieval Index: ${((tIndexEnd - tIndexStart) / 1000).toFixed(2)}s
+---------------------------
+Total background: ${((performance.now() - perfStart) / 1000).toFixed(2)}s
+    `);
   } catch (err: any) {
-    const errorMessage = err instanceof ExtractionError ? err.message : "An unexpected error occurred during processing.";
-    
-    // Mark failed
+    console.error("[processDocument] Background processing failed:", err);
+    const errorMessage =
+      err instanceof ExtractionError
+        ? err.message
+        : err.message || "An unexpected error occurred during background processing.";
+
     await db
       .update(documents)
       .set({
@@ -99,12 +126,13 @@ export async function processUploadedDocument(formData: FormData) {
         processingError: errorMessage,
         updatedAt: new Date(),
       })
-      .where(eq(documents.id, initalDoc.id));
-      
-    try { revalidatePath("/"); } catch(e) {}
-    return { success: false, error: errorMessage };
+      .where(eq(documents.id, documentId));
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Server Actions (used by legacy paths / non-upload mutations)
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function getDocuments() {
   return await db.query.documents.findMany({
@@ -113,17 +141,20 @@ export async function getDocuments() {
 }
 
 export async function getDocumentText(documentId: string) {
-  const [doc] = await db.select({ text: documents.extractedText }).from(documents).where(eq(documents.id, documentId));
+  const [doc] = await db
+    .select({ text: documents.extractedText })
+    .from(documents)
+    .where(eq(documents.id, documentId));
   return doc?.text || "";
 }
 
 export async function deleteDocument(documentId: string) {
-  // Cascading deletes are not strictly enforced in our Drizzle schema for chunks,
-  // so we must delete chunks explicitly within a transaction to avoid orphan chunks.
   await db.transaction(async (tx) => {
     await tx.delete(documentChunks).where(eq(documentChunks.documentId, documentId));
     await tx.delete(documents).where(eq(documents.id, documentId));
   });
-  try { revalidatePath("/"); } catch(e) {}
+  try {
+    revalidatePath("/");
+  } catch (e) {}
   return { success: true };
 }

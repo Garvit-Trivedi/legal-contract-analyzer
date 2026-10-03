@@ -53,8 +53,8 @@ export function chunkExtractedPages(pages: ExtractedPage[]): ChunkingResult {
   }
 
   // 2. Deterministic Chunking
-  // Max chunk size targeted around ~1000-1500 chars, preserving word/paragraph boundaries
-  const MAX_CHUNK_SIZE = 1200;
+  // Max chunk size targeted around ~1500 chars (approx 350-400 tokens), preserving word/paragraph boundaries for good semantic value
+  const MAX_CHUNK_SIZE = 1500;
   const chunks: DocumentChunkRecord[] = [];
   let currentChunkIndex = 0;
   

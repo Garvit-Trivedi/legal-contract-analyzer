@@ -242,12 +242,12 @@ function DocumentRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isReady = doc.processingStatus === "completed" && doc.indexingStatus === "completed";
+  const isReady = (doc.processingStatus === "completed" || doc.processingStatus === "ready") && doc.indexingStatus === "completed";
   const isFailed = doc.processingStatus === "failed" || doc.indexingStatus === "failed";
   const isProcessing =
     !isReady &&
     !isFailed &&
-    (doc.processingStatus === "processing" || doc.processingStatus === "pending");
+    (doc.processingStatus === "processing" || doc.processingStatus === "pending" || doc.processingStatus === "queued" || doc.processingStatus === "extracting" || doc.processingStatus === "chunking");
   const isIndexing =
     isReady === false &&
     !isFailed &&
@@ -621,54 +621,76 @@ export function Dashboard({
   const [filter, setFilter] = useState("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [uploadToast, setUploadToast] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPollingRef = useRef(false);
+
+  const PENDING_STATUSES = ["processing", "pending", "indexing", "queued", "extracting", "chunking"];
 
   // ── Fetch fresh document list ──────────────────────────────────────────────
-  const refreshDocuments = useCallback(async () => {
+  // Returns the fresh docs array on success, or null on network failure
+  const refreshDocuments = useCallback(async (): Promise<DocumentRecord[] | null> => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return null;
+    }
     try {
       const res = await fetch("/api/documents", { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.documents)) {
         setDocuments(data.documents);
+        return data.documents;
       }
+      return null;
     } catch {
-      // Silently ignore network errors
+      return null;
     }
   }, []);
 
-  // ── Polling ────────────────────────────────────────────────────────────────
+  // ── Polling — only active while at least one document is pending/processing ─
   const startPolling = useCallback(() => {
-    if (pollRef.current) return;
-    pollRef.current = setInterval(async () => {
-      await refreshDocuments();
-      setDocuments((prev) => {
-        const stillPending = prev.some(
-          (d) =>
-            d.processingStatus === "processing" ||
-            d.processingStatus === "pending" ||
-            d.indexingStatus === "indexing" ||
-            d.indexingStatus === "pending"
-        );
-        if (!stillPending && pollRef.current) {
-          clearInterval(pollRef.current);
-          pollRef.current = null;
-        }
-        return prev;
-      });
-    }, 2500);
+    if (isPollingRef.current) return;
+    isPollingRef.current = true;
+
+    const poll = async () => {
+      if (!isPollingRef.current) return;
+
+      const freshDocs = await refreshDocuments();
+
+      if (freshDocs === null) {
+        // Network error — back off and retry
+        pollRef.current = setTimeout(poll, 5000);
+        return;
+      }
+
+      // Check directly on fresh data — avoids React batching issues
+      const stillPending = freshDocs.some(
+        (d) =>
+          PENDING_STATUSES.includes(d.processingStatus ?? "") ||
+          PENDING_STATUSES.includes(d.indexingStatus ?? "")
+      );
+
+      if (stillPending) {
+        pollRef.current = setTimeout(poll, 2500);
+      } else {
+        // All done — stop polling
+        isPollingRef.current = false;
+      }
+    };
+
+    poll();
   }, [refreshDocuments]);
 
   useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => {
+      isPollingRef.current = false;
+      if (pollRef.current) clearTimeout(pollRef.current);
+    };
   }, []);
 
   useEffect(() => {
     const hasPending = documents.some(
       (d) =>
-        d.processingStatus === "processing" ||
-        d.processingStatus === "pending" ||
-        d.indexingStatus === "indexing" ||
-        d.indexingStatus === "pending"
+        PENDING_STATUSES.includes(d.processingStatus ?? "") ||
+        PENDING_STATUSES.includes(d.indexingStatus ?? "")
     );
     if (hasPending) startPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -725,7 +747,7 @@ export function Dashboard({
   // ── Stats ──────────────────────────────────────────────────────────────────
   const indexed = documents.filter((d) => d.indexingStatus === "completed").length;
   const processing = documents.filter(
-    (d) => d.processingStatus === "processing" || d.processingStatus === "pending"
+    (d) => d.processingStatus === "processing" || d.processingStatus === "pending" || d.processingStatus === "queued" || d.processingStatus === "extracting" || d.processingStatus === "chunking"
   ).length;
 
   return (

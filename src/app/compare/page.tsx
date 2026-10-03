@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function ComparePage() {
   const documents = await getDocuments();
   // Filter only ready docs
-  const readyDocs = documents.filter(d => d.processingStatus === 'completed' && d.indexingStatus === 'completed');
+  const readyDocs = documents.filter(d => (d.processingStatus === 'completed' || d.processingStatus === 'ready') && d.indexingStatus === 'completed');
 
   return <ComparisonWorkflow documents={readyDocs} />;
 }

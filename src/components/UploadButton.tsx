@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { processUploadedDocument } from "@/lib/document/actions";
 
 interface UploadButtonProps {
   children?: React.ReactNode;
@@ -26,6 +25,7 @@ export function UploadButton({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // ── Client-side pre-flight checks (UX only — server re-validates) ──────
     const extension = file.name.split(".").pop()?.toLowerCase() || "";
     const isValidPdf = extension === "pdf";
     const isValidDocx = extension === "docx";
@@ -36,6 +36,7 @@ export function UploadButton({
       const msg = `Unsupported file type: ${file.name}`;
       setErrorMsg(msg);
       onUploadError?.(msg);
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
@@ -44,6 +45,7 @@ export function UploadButton({
       const msg = "File exceeds 50MB limit.";
       setErrorMsg(msg);
       onUploadError?.(msg);
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
@@ -55,19 +57,28 @@ export function UploadButton({
     formData.append("file", file);
 
     try {
-      const result = await processUploadedDocument(formData);
-      if (result.success) {
+      // POST to the dedicated upload Route Handler.
+      // The server returns 201 the moment the file is validated and queued —
+      // heavy processing (parse, chunk, embed) runs in the background via after().
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
         setStatus("idle");
-        onUploadSuccess?.(result.documentId ?? "");
+        onUploadSuccess?.(data.documentId ?? "");
       } else {
         setStatus("failed");
-        const msg = result.error || "Processing failed.";
+        const msg = data.error || "Upload failed.";
         setErrorMsg(msg);
         onUploadError?.(msg);
       }
     } catch (err: any) {
       setStatus("failed");
-      const msg = err.message || "Upload failed.";
+      const msg = err.message || "Network error. Please try again.";
       setErrorMsg(msg);
       onUploadError?.(msg);
     }
@@ -148,7 +159,7 @@ export function UploadButton({
                 color: "#FFFFFF",
               }}
             >
-              Processing...
+              Uploading...
             </span>
           </div>
         ) : (

@@ -96,7 +96,7 @@ async function fetchDocument(docId: string): Promise<DocumentRecord> {
   if (!doc) {
     throw new ComparisonValidationError(`Document not found: ${docId}`, 404);
   }
-  if (doc.processingStatus !== "completed") {
+  if (doc.processingStatus !== "completed" && doc.processingStatus !== "ready") {
     throw new ComparisonValidationError(
       `Document "${doc.filename}" has not been fully processed (status: ${doc.processingStatus}).`,
       422

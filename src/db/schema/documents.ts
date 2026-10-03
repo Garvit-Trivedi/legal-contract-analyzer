@@ -2,7 +2,11 @@ import { pgTable, uuid, varchar, integer, text, timestamp, pgEnum } from "drizzl
 
 export const processingStatusEnum = pgEnum("processing_status", [
   "pending",
+  "queued",
+  "extracting",
+  "chunking",
   "processing",
+  "ready",
   "completed",
   "failed",
 ]);
@@ -24,6 +28,9 @@ export const documents = pgTable("documents", {
   processingError: text("processing_error"),
   indexingStatus: indexingStatusEnum("indexing_status").notNull().default("pending"),
   indexingError: text("indexing_error"),
+  progress: integer("progress").notNull().default(0),
+  totalChunks: integer("total_chunks").notNull().default(0),
+  processedChunks: integer("processed_chunks").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

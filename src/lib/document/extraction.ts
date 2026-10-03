@@ -59,13 +59,35 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
     const pages: ExtractedPage[] = [];
     let totalCharacters = 0;
 
-    for (let i = 1; i <= numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const strings = textContent.items.map((item: any) => item.str);
-      const text = strings.join(" ");
-      pages.push({ pageNumber: i, text });
-      totalCharacters += text.replace(/\s+/g, "").length;
+    // Extract pages in concurrent batches to drastically improve speed for large documents
+    // Batched securely and yielded microscopically to prevent V8 CPU locking which crashes Next.js sockets
+    const BATCH_SIZE = 10;
+    for (let start = 1; start <= numPages; start += BATCH_SIZE) {
+      const end = Math.min(start + BATCH_SIZE - 1, numPages);
+      const pagePromises = [];
+      
+      for (let i = start; i <= end; i++) {
+        pagePromises.push((async () => {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          
+          // Micro-yield to node event loop during heavy text map
+          await new Promise(resolve => setTimeout(resolve, 0));
+          
+          const strings = textContent.items.map((item: any) => item.str);
+          const text = strings.join(" ");
+          return { pageNumber: i, text, length: text.replace(/\s+/g, "").length };
+        })());
+      }
+      
+      const results = await Promise.all(pagePromises);
+      for (const res of results) {
+        pages.push({ pageNumber: res.pageNumber, text: res.text });
+        totalCharacters += res.length;
+      }
+      
+      // Explicit macro-yield between batches so Next.js HTTP server ping doesn't time out
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
 
     if (numPages > 0 && totalCharacters < 50) {

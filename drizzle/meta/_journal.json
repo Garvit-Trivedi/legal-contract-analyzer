@@ -15,6 +15,13 @@
       "when": 1790959772111,
       "tag": "0001_deep_the_santerians",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791051598705,
+      "tag": "0002_tearful_fabian_cortez",
+      "breakpoints": true
     }
   ]
 }
