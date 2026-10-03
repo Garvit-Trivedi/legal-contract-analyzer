@@ -1,7 +1,50 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { getMessages } from "@/lib/ai/chat.actions";
+
+// ─── Render AI message content, highlighting <quote>…</quote> sections ─────────
+function renderMessageContent(content: string): React.ReactNode {
+  if (!content) return null;
+  // Split on <quote>…</quote> boundaries
+  const parts = content.split(/(<quote>[\s\S]*?<\/quote>)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        const match = part.match(/^<quote>([\s\S]*?)<\/quote>$/);
+        if (match) {
+          return (
+            <mark
+              key={i}
+              className="inline rounded-[4px] px-1.5 py-0.5 mx-0.5 font-medium"
+              style={{
+                background: "rgba(251,191,36,0.22)",
+                borderBottom: "2px solid rgba(245,158,11,0.7)",
+                color: "#78350F",
+                fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                fontSize: "0.92em",
+                lineHeight: 1.6,
+              }}
+            >
+              {/* Tiny quote-pin icon */}
+              <svg
+                style={{ display: "inline", verticalAlign: "middle", marginRight: "3px", marginBottom: "2px", flexShrink: 0 }}
+                width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" />
+                <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z" />
+              </svg>
+              {match[1]}
+            </mark>
+          );
+        }
+        // Plain text — preserve whitespace/newlines
+        return <span key={i} style={{ whiteSpace: "pre-wrap" }}>{part}</span>;
+      })}
+    </>
+  );
+}
 
 export function ChatWindow({ 
   documentIds, 
@@ -300,17 +343,28 @@ export function ChatWindow({
                         </div>
                       )}
 
-                      <div className="text-[14px] leading-relaxed text-[#111111] whitespace-pre-wrap">
-                        {msg.content || (msg.loading && (!msg.timeline || msg.timeline.length === 0) && (
-                          <span className="flex items-center gap-2 text-zinc-500">
-                            <span className="inline-flex gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      <div
+                        className="text-[14px] leading-relaxed text-[#1A1A1A]"
+                        style={{
+                          fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          lineHeight: 1.75,
+                        }}
+                      >
+                        {msg.content
+                          ? renderMessageContent(msg.content)
+                          : (msg.loading && (!msg.timeline || msg.timeline.length === 0) && (
+                            <span className="flex items-center gap-2 text-zinc-500">
+                              <span className="inline-flex gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#1677FF] animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                              </span>
+                              Generating response…
                             </span>
-                            Generating response…
-                          </span>
-                        ))}
+                          ))
+                        }
                       </div>
 
                       {/* Citations */}
@@ -321,28 +375,103 @@ export function ChatWindow({
                               key={idx}
                               disabled={!c.verified}
                               onClick={() => c.verified && onCitationClick && onCitationClick(c)}
-                              className={`flex items-start gap-2 w-full text-left px-3 py-2.5 rounded-lg border text-[13px] transition-colors ${
-                                c.verified
-                                  ? 'border-[#E8E4DE] bg-[#F8F6F2] hover:bg-[#F3EFE9] cursor-pointer'
-                                  : 'border-[#F47B20]/20 bg-[#FFF0E3] cursor-not-allowed opacity-80'
-                              }`}
+                              className="flex items-start gap-2.5 w-full text-left text-[13px] transition-all rounded-xl border"
+                              style={c.verified ? {
+                                background: "linear-gradient(135deg, #052E16 0%, #064E26 100%)",
+                                borderColor: "#16A34A",
+                                padding: "10px 14px",
+                                cursor: "pointer",
+                                boxShadow: "0 1px 8px rgba(22,163,74,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
+                              } : {
+                                background: "#FFF7ED",
+                                borderColor: "rgba(244,123,32,0.3)",
+                                padding: "10px 14px",
+                                cursor: "not-allowed",
+                                opacity: 0.82,
+                              }}
                             >
-                              <span className={`mt-0.5 shrink-0 text-[10px] font-bold ${c.verified ? 'text-[#16A34A]' : 'text-[#F47B20]'}`}>
+                              {/* Badge icon */}
+                              <span
+                                className="shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black"
+                                style={c.verified ? {
+                                  background: "#16A34A",
+                                  color: "#FFFFFF",
+                                  boxShadow: "0 0 0 2px rgba(22,163,74,0.35)",
+                                } : {
+                                  background: "#FED7AA",
+                                  color: "#C2410C",
+                                }}
+                              >
                                 {c.verified ? '✓' : '⚠'}
                               </span>
-                              <div className="min-w-0">
-                                <p className={`font-semibold ${c.verified ? 'text-[#111111]' : 'text-[#5E5A54]'}`}>
-                                  {c.verified ? 'Verified source' : 'Unverified source'}
-                                  {c.verified && c.pageStart != null ? ` · p. ${c.pageStart}` : ''}
-                                </p>
+
+                              <div className="min-w-0 flex-1">
+                                {/* Header row */}
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <p
+                                    className="font-bold text-[12px] tracking-wide uppercase"
+                                    style={c.verified ? { color: "#4ADE80" } : { color: "#92400E" }}
+                                  >
+                                    {c.verified ? 'Verified Source' : 'Unverified Source'}
+                                  </p>
+                                  {c.verified && c.pageStart != null && (
+                                    <span
+                                      className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                                      style={{ background: "rgba(74,222,128,0.15)", color: "#86EFAC" }}
+                                    >
+                                      p.{c.pageStart}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Document name */}
                                 {documentsMap[c.documentId] && (
-                                  <p className="text-[10px] text-[#77736D] font-medium my-0.5">{documentsMap[c.documentId]}</p>
+                                  <p
+                                    className="text-[10px] font-medium mb-1"
+                                    style={{ color: c.verified ? "#6EE7B7" : "#A16207" }}
+                                  >
+                                    {documentsMap[c.documentId]}
+                                  </p>
                                 )}
-                                {c.quote && <p className="text-[#5E5A54] truncate mt-0.5">&ldquo;{c.quote}&rdquo;</p>}
-                                {!c.verified && <p className="text-[#F47B20]/80 text-[10px] mt-0.5">Could not verify quote in document</p>}
+
+                                {/* Quote text */}
+                                {c.quote && (
+                                  <p
+                                    className="text-[12px] leading-relaxed mt-1 truncate"
+                                    style={c.verified ? {
+                                      color: "#D1FAE5",
+                                      fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+                                      background: "rgba(255,255,255,0.07)",
+                                      borderLeft: "3px solid #16A34A",
+                                      paddingLeft: "8px",
+                                      paddingTop: "3px",
+                                      paddingBottom: "3px",
+                                      borderRadius: "0 4px 4px 0",
+                                    } : {
+                                      color: "#92400E",
+                                    }}
+                                  >
+                                    &ldquo;{c.quote}&rdquo;
+                                  </p>
+                                )}
+
+                                {/* Unverified warning */}
+                                {!c.verified && (
+                                  <p className="text-[#F47B20]/80 text-[10px] mt-1 font-medium">
+                                    Could not verify quote in document
+                                  </p>
+                                )}
                               </div>
+
+                              {/* Jump arrow */}
                               {c.verified && (
-                                <svg className="w-3.5 h-3.5 text-[#77736D] shrink-0 mt-0.5 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                <svg
+                                  className="w-4 h-4 shrink-0 mt-0.5 ml-auto"
+                                  style={{ color: "#4ADE80" }}
+                                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
                               )}
                             </button>
                           ))}

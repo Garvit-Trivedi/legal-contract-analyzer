@@ -171,17 +171,18 @@ export function DocumentViewer({
     const hasCite = citeStart != null && citeEnd != null &&
       citeStart >= 0 && citeEnd <= pageText.length && citeEnd > citeStart;
 
-    let hlBg = "bg-amber-500/25";
-    let hlBorder = "border-amber-500/50";
+    let hlBg = "bg-amber-300/80";
+    let hlBorder = "border-amber-600";
     let textDecoration = "";
+    let hlText = "text-[#78350F]";
     if (highlightColor === "emerald") {
-      hlBg = "bg-emerald-500/25"; hlBorder = "border-emerald-500/50";
-      textDecoration = "underline decoration-emerald-500/50 decoration-2 underline-offset-2";
+      hlBg = "bg-emerald-300/70"; hlBorder = "border-emerald-600"; hlText = "text-[#064E3B]";
+      textDecoration = "underline decoration-emerald-600 decoration-2 underline-offset-2";
     } else if (highlightColor === "rose") {
-      hlBg = "bg-rose-500/25"; hlBorder = "border-rose-500/50";
-      textDecoration = "line-through decoration-rose-500/50 decoration-2";
+      hlBg = "bg-rose-300/70"; hlBorder = "border-rose-600"; hlText = "text-[#881337]";
+      textDecoration = "line-through decoration-rose-600 decoration-2";
     }
-    const citeClass = `citation-highlight text-[#111111] ${hlBg} border-b-2 ${hlBorder} rounded-[2px] transition-all px-0.5 ${textDecoration}`;
+    const citeClass = `citation-highlight ${hlText} ${hlBg} border-b-[3px] ${hlBorder} rounded-[3px] transition-all px-1 py-0.5 font-semibold ${textDecoration}`;
 
     // Helper: split a chunk by searchQuery, return array of JSX
     const withSearchHighlights = (chunk: string, isCite: boolean, keyPfx: string): React.ReactNode[] => {
