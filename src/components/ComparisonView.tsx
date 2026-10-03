@@ -5,25 +5,22 @@ import { ComparisonResult, ComparisonChange, ChangeSignificanceV2 } from "@/type
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ChatWindow } from "@/components/ChatWindow";
 
-// Animated loader steps shown whilst the comparison API runs
+// ─── Loader Steps ─────────────────────────────────────────────────────────────
+
 const LOADER_STEPS = [
   { label: "Loading document contents", duration: 1200 },
   { label: "Normalizing text", duration: 900 },
   { label: "Aligning paragraphs", duration: 1400 },
   { label: "Detecting changes", duration: 1100 },
   { label: "Classifying significance", duration: 900 },
-  { label: "Running AI analysis", duration: 0 }, // stays here until done
+  { label: "Running AI analysis", duration: 0 },
 ];
 
+// ─── Premium Loading State ────────────────────────────────────────────────────
+
 function ComparisonLoader({
-  docAName,
-  docBName,
-  onAbort,
-}: {
-  docAName: string;
-  docBName: string;
-  onAbort: () => void;
-}) {
+  docAName, docBName, onAbort,
+}: { docAName: string; docBName: string; onAbort: () => void }) {
   const [step, setStep] = React.useState(0);
 
   React.useEffect(() => {
@@ -44,89 +41,86 @@ function ComparisonLoader({
   }, []);
 
   return (
-    <div className="flex-1 flex items-center justify-center p-8">
-      <div className="w-full max-w-md">
-        {/* Spinning orb */}
-        <div className="flex justify-center mb-10">
-          <div className="relative w-20 h-20">
-            {/* Outer ring */}
-            <div className="absolute inset-0 rounded-full border-4 border-amber-500/10 border-t-amber-500 animate-spin" />
-            {/* Inner ring */}
-            <div
-              className="absolute inset-3 rounded-full border-4 border-blue-500/10 border-b-blue-500 animate-spin"
-              style={{ animationDirection: "reverse", animationDuration: "1.4s" }}
-            />
-            {/* Center dot */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
-            </div>
+    <div style={{
+      flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "40px", background: "#F8F6F2",
+    }}>
+      <div style={{
+        background: "#FFFFFF", border: "1px solid #E8E4DE",
+        borderRadius: "24px", padding: "48px 40px",
+        boxShadow: "0 8px 40px rgba(17,17,17,0.06)",
+        maxWidth: "440px", width: "100%", textAlign: "center",
+      }}>
+        {/* Animated ring */}
+        <div style={{ position: "relative", width: "72px", height: "72px", margin: "0 auto 28px" }}>
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "50%",
+            border: "3px solid #F0ECE6", borderTopColor: "#F47B20",
+            animation: "spin 1s linear infinite",
+          }} />
+          <div style={{
+            position: "absolute", inset: "10px", borderRadius: "50%",
+            border: "3px solid #F0ECE6", borderBottomColor: "#1677FF",
+            animation: "spin 1.4s linear infinite reverse",
+          }} />
+          <div style={{
+            position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <div style={{
+              width: "10px", height: "10px", borderRadius: "50%",
+              background: "#F47B20", animation: "pulse 1.5s ease-in-out infinite",
+            }} />
           </div>
         </div>
 
-        {/* Heading */}
-        <h3 className="text-center text-xl font-semibold text-white mb-1">
+        <h3 style={{
+          fontFamily: "'DM Serif Display', 'Playfair Display', Georgia, serif",
+          fontSize: "22px", fontWeight: 400, color: "#111111",
+          margin: "0 0 8px", letterSpacing: "-0.01em",
+        }}>
           Comparing Documents
         </h3>
-        <p className="text-center text-xs text-slate-500 font-mono mb-8">
-          <span className="text-emerald-400">{docAName}</span>
-          <span className="text-slate-600 mx-2">vs</span>
-          <span className="text-blue-400">{docBName}</span>
+        <p style={{ fontSize: "13px", color: "#77736D", margin: "0 0 28px", lineHeight: 1.5 }}>
+          <span style={{ color: "#16A34A", fontWeight: 500 }}>{docAName}</span>
+          <span style={{ color: "#D4CFC8", margin: "0 8px" }}>vs</span>
+          <span style={{ color: "#1677FF", fontWeight: 500 }}>{docBName}</span>
         </p>
 
         {/* Steps */}
-        <div className="space-y-3 mb-10">
+        <div style={{ textAlign: "left", marginBottom: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
           {LOADER_STEPS.map((s, i) => {
             const done = i < step;
             const active = i === step;
-            const pending = i > step;
-
             return (
-              <div key={i} className="flex items-center gap-3">
-                {/* Status icon */}
-                <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
-                    done
-                      ? "bg-emerald-500/20 border border-emerald-500/50"
-                      : active
-                      ? "border-2 border-amber-500 animate-pulse"
-                      : "border border-white/10"
-                  }`}
-                >
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{
+                  width: "20px", height: "20px", borderRadius: "50%", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: done ? "#EAF8EF" : active ? "#FFF0E3" : "#F8F6F2",
+                  border: `1.5px solid ${done ? "#16A34A" : active ? "#F47B20" : "#E8E4DE"}`,
+                  transition: "all 300ms",
+                }}>
                   {done && (
-                    <svg className="w-3 h-3 text-emerald-400" viewBox="0 0 12 12" fill="none">
-                      <path
-                        d="M2 6l3 3 5-5"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#16A34A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" />
                     </svg>
                   )}
-                  {active && <div className="w-2 h-2 rounded-full bg-amber-500" />}
+                  {active && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#F47B20" }} />}
                 </div>
-
-                {/* Label */}
-                <span
-                  className={`text-sm transition-all duration-500 ${
-                    done
-                      ? "text-slate-500 line-through decoration-slate-700"
-                      : active
-                      ? "text-white font-medium"
-                      : "text-slate-700"
-                  }`}
-                >
+                <span style={{
+                  fontSize: "13px", transition: "all 300ms",
+                  color: done ? "#A09A93" : active ? "#111111" : "#C8C3BB",
+                  fontWeight: active ? 500 : 400,
+                  textDecoration: done ? "line-through" : "none",
+                }}>
                   {s.label}
                 </span>
-
-                {/* Spinner for active */}
                 {active && (
-                  <div className="ml-auto w-3 h-3 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin flex-shrink-0" />
-                )}
-                {done && (
-                  <span className="ml-auto text-[10px] text-emerald-600 font-mono uppercase tracking-wider">
-                    done
-                  </span>
+                  <div style={{
+                    marginLeft: "auto", width: "12px", height: "12px",
+                    border: "2px solid #F0ECE6", borderTopColor: "#F47B20",
+                    borderRadius: "50%", animation: "spin 0.7s linear infinite", flexShrink: 0,
+                  }} />
                 )}
               </div>
             );
@@ -134,38 +128,47 @@ function ComparisonLoader({
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-white/5 rounded-full overflow-hidden mb-6">
-          <div
-            className="h-full bg-gradient-to-r from-amber-500 to-blue-500 rounded-full transition-all duration-700"
-            style={{ width: `${((step + 1) / LOADER_STEPS.length) * 100}%` }}
-          />
+        <div style={{ height: "4px", background: "#F0ECE6", borderRadius: "4px", overflow: "hidden", marginBottom: "20px" }}>
+          <div style={{
+            height: "100%", borderRadius: "4px",
+            background: "linear-gradient(90deg, #F47B20, #1677FF)",
+            width: `${((step + 1) / LOADER_STEPS.length) * 100}%`,
+            transition: "width 700ms ease",
+          }} />
         </div>
 
-        {/* Abort */}
-        <div className="flex justify-center">
-          <button
-            onClick={onAbort}
-            className="px-4 py-1.5 border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 rounded-full text-xs font-bold uppercase tracking-wider transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+        <button
+          onClick={onAbort}
+          style={{
+            padding: "8px 20px", border: "1px solid #E8E4DE",
+            background: "#FFFFFF", color: "#77736D", borderRadius: "10px",
+            fontSize: "12px", fontWeight: 600, cursor: "pointer",
+            transition: "border-color 150ms, color 150ms",
+            fontFamily: "inherit",
+          }}
+          onMouseEnter={e => { (e.currentTarget.style.borderColor = "#DC2626"); (e.currentTarget.style.color = "#DC2626"); }}
+          onMouseLeave={e => { (e.currentTarget.style.borderColor = "#E8E4DE"); (e.currentTarget.style.color = "#77736D"); }}
+        >
+          Cancel
+        </button>
       </div>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+      `}</style>
     </div>
   );
 }
 
+// ─── Main ComparisonView ──────────────────────────────────────────────────────
+
 export function ComparisonView({
-  documentAId,
-  documentBId,
-  documentAName = "Document A",
-  documentBName = "Document B",
+  documentAId, documentBId,
+  documentAName = "Document A", documentBName = "Document B",
   onAbort,
 }: {
-  documentAId: string;
-  documentBId: string;
-  documentAName?: string;
-  documentBName?: string;
+  documentAId: string; documentBId: string;
+  documentAName?: string; documentBName?: string;
   onAbort?: () => void;
 }) {
   const [loading, setLoading] = useState(true);
@@ -181,52 +184,45 @@ export function ComparisonView({
   // Selection state
   const [selectedChangeId, setSelectedChangeId] = useState<string | null>(null);
 
-  // Synchronized scrolling state
+  // Synchronized scrolling
   const paneARef = useRef<HTMLDivElement>(null);
   const paneBRef = useRef<HTMLDivElement>(null);
-  const isSyncing = useRef(false); // prevent feedback loops
+  const isSyncing = useRef(false);
   const [syncScroll, setSyncScroll] = useState(true);
   const [lenA, setLenA] = useState(1);
   const [lenB, setLenB] = useState(1);
 
-  // Robust scroll sync using isSyncing guard to prevent feedback loops
-  const handleScroll = (source: 'A' | 'B', e: React.UIEvent<HTMLDivElement>) => {
+  const handleScroll = (source: "A" | "B", e: React.UIEvent<HTMLDivElement>) => {
     if (!syncScroll || !result || result.changes.length === 0) return;
-    if (isSyncing.current) return; // already synchronizing, don't fire again
+    if (isSyncing.current) return;
 
     const A = paneARef.current;
     const B = paneBRef.current;
     if (!A || !B) return;
 
-    const sourceEl = source === 'A' ? A : B;
-    const targetEl = source === 'A' ? B : A;
-    const sourceLen = source === 'A' ? lenA : lenB;
-    const targetLen = source === 'A' ? lenB : lenA;
+    const sourceEl = source === "A" ? A : B;
+    const targetEl = source === "A" ? B : A;
+    const sourceLen = source === "A" ? lenA : lenB;
+    const targetLen = source === "A" ? lenB : lenA;
 
     const maxSourceScroll = sourceEl.scrollHeight - sourceEl.clientHeight;
     if (maxSourceScroll <= 0) return;
     const sourceRatio = sourceEl.scrollTop / maxSourceScroll;
     const sourceCharIdx = sourceRatio * (sourceLen || 1);
 
-    // Find the closest aligned change anchor point for precision mapping
     let closestChange = null;
     let minDiff = Infinity;
     for (const change of result.changes) {
-      const loc = source === 'A' ? change.beforeLocation : change.afterLocation;
+      const loc = source === "A" ? change.beforeLocation : change.afterLocation;
       if (!loc) continue;
       const diff = Math.abs(loc.characterStart - sourceCharIdx);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestChange = change;
-      }
+      if (diff < minDiff) { minDiff = diff; closestChange = change; }
     }
 
-    let targetRatio = sourceRatio; // default: proportional
+    let targetRatio = sourceRatio;
     if (closestChange) {
-      const targetLoc = source === 'A' ? closestChange.afterLocation : closestChange.beforeLocation;
-      if (targetLoc && targetLen > 0) {
-        targetRatio = targetLoc.characterStart / targetLen;
-      }
+      const targetLoc = source === "A" ? closestChange.afterLocation : closestChange.beforeLocation;
+      if (targetLoc && targetLen > 0) targetRatio = targetLoc.characterStart / targetLen;
     }
 
     const maxTargetScroll = targetEl.scrollHeight - targetEl.clientHeight;
@@ -234,7 +230,6 @@ export function ComparisonView({
 
     isSyncing.current = true;
     targetEl.scrollTop = targetRatio * maxTargetScroll;
-    // Release the guard after one animation frame
     requestAnimationFrame(() => { isSyncing.current = false; });
   };
 
@@ -269,16 +264,10 @@ export function ComparisonView({
       });
 
       const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "An unexpected error occurred during comparison.");
-      }
-
+      if (!res.ok || !data.success) throw new Error(data.error || "An unexpected error occurred during comparison.");
       setResult(data.comparison as ComparisonResult);
     } catch (e: any) {
-      if (e.name === "AbortError") {
-        console.log("Comparison aborted");
-      } else {
+      if (e.name !== "AbortError") {
         console.error("Comparison error:", e);
         setError(e.message);
       }
@@ -288,208 +277,345 @@ export function ComparisonView({
     }
   };
 
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full w-full bg-[#0a0a0b]">
-        <ComparisonLoader docAName={documentAName} docBName={documentBName} onAbort={() => { stopComparison(); if (onAbort) onAbort(); }} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+        <ComparisonLoader
+          docAName={documentAName} docBName={documentBName}
+          onAbort={() => { stopComparison(); onAbort?.(); }}
+        />
       </div>
     );
   }
 
+  // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-[#0a0a0b] text-center">
-        <div className="w-16 h-16 bg-rose-500/10 rounded-full flex flex-col items-center justify-center border border-rose-500/20 mb-6">
-          <span className="text-rose-500 font-bold text-xl">!</span>
+      <div style={{
+        flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "40px", background: "#F8F6F2",
+      }}>
+        <div style={{
+          background: "#FFFFFF", border: "1px solid #FECACA",
+          borderRadius: "24px", padding: "48px 40px",
+          boxShadow: "0 8px 40px rgba(17,17,17,0.06)",
+          maxWidth: "480px", width: "100%", textAlign: "center",
+        }}>
+          <div style={{
+            width: "56px", height: "56px", borderRadius: "50%",
+            background: "#FEF2F2", border: "1px solid #FECACA",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 20px",
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <h3 style={{
+            fontFamily: "'DM Serif Display', 'Playfair Display', Georgia, serif",
+            fontSize: "22px", fontWeight: 400, color: "#111111", margin: "0 0 10px",
+          }}>
+            Analysis Failed
+          </h3>
+          <p style={{ fontSize: "14px", color: "#77736D", margin: "0 0 28px", lineHeight: 1.6 }}>{error}</p>
+          <button
+            onClick={runComparison}
+            style={{
+              padding: "12px 28px", background: "#111111", color: "#FFFFFF",
+              borderRadius: "12px", border: "none", fontSize: "14px",
+              fontWeight: 600, cursor: "pointer", transition: "background 150ms",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#F47B20")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#111111")}
+          >
+            Retry Comparison
+          </button>
         </div>
-        <h3 className="text-xl font-medium text-rose-100 mb-2">Analysis Failed</h3>
-        <p className="text-sm text-rose-400/80 max-w-lg mb-8">{error}</p>
-        <button
-          onClick={runComparison}
-          className="px-6 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-full text-sm font-bold transition-colors shadow-lg"
-        >
-          Retry Comparison
-        </button>
       </div>
     );
   }
 
   if (!result) return null;
 
-  // Apply filters
+  // ── Filters ──────────────────────────────────────────────────────────────
   const filteredChanges = result.changes.filter((c) => {
     if (filterType !== "ALL" && c.type !== filterType) return false;
     if (filterSig !== "ALL" && c.significance !== filterSig) return false;
     return true;
   });
 
-  // Derived active change state
-  const activeIndex = filteredChanges.findIndex(c => c.id === selectedChangeId);
+  const activeIndex = filteredChanges.findIndex((c) => c.id === selectedChangeId);
   const activeChange = activeIndex >= 0 ? filteredChanges[activeIndex] : null;
 
   const handleNext = () => {
-    if (activeIndex < filteredChanges.length - 1) {
-      setSelectedChangeId(filteredChanges[activeIndex + 1].id);
-    }
+    if (activeIndex < filteredChanges.length - 1) setSelectedChangeId(filteredChanges[activeIndex + 1].id);
   };
-
   const handlePrev = () => {
-    if (activeIndex > 0) {
-      setSelectedChangeId(filteredChanges[activeIndex - 1].id);
-    }
+    if (activeIndex > 0) setSelectedChangeId(filteredChanges[activeIndex - 1].id);
   };
 
-  // Build header stats safely
   const aStat = {
     adds: result.stats.byType.ADDED,
     dels: result.stats.byType.REMOVED,
-    mods: result.stats.byType.MODIFIED
+    mods: result.stats.byType.MODIFIED,
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 w-full bg-[#09090b] text-zinc-300">
-      {/* Metrics Row */}
-      <div className="flex gap-4 p-5 border-b border-white/10 shrink-0 bg-[#0b0b0e] overflow-x-auto custom-scrollbar justify-between items-center group">
-         <div className="flex gap-4 flex-1">
-           <MetricCard label="TOTAL CLAUSES" value={result.stats.total} color="text-white" borderClr="border-white/10" />
-           <MetricCard label="SUBSTANTIVE CHANGES" value={aStat.mods} color="text-amber-500" borderClr="border-amber-500/20" />
-           <MetricCard label="HIGH RISK IMPACT" value={filteredChanges.filter(c => c.significance === 'HIGH').length} color="text-red-500" borderClr="border-red-500/20" />
-           <MetricCard label="ADDED CLAUSES" value={`+${aStat.adds}`} color="text-emerald-500" borderClr="border-emerald-500/20" />
-           <MetricCard label="DELETED CLAUSES" value={`-${aStat.dels}`} color="text-slate-400" borderClr="border-slate-500/20" />
-         </div>
-         
-         <div className="px-4 shrink-0 flex items-center justify-center">
-            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-zinc-300 cursor-pointer select-none transition-colors">
-              <input type="checkbox" checked={syncScroll} onChange={e => setSyncScroll(e.target.checked)} className="accent-blue-500 w-3.5 h-3.5 rounded" />
-              Sync Scrolling
-            </label>
-         </div>
+    <div style={{
+      flex: 1, display: "flex", flexDirection: "column", minHeight: 0, width: "100%",
+      background: "#F8F6F2", fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        .cmp-filter-btn { transition: all 150ms; }
+        .cmp-filter-btn:hover { opacity: 0.85; }
+        .cmp-change-card { transition: border-color 150ms, box-shadow 150ms, background 150ms; }
+        .cmp-change-card:hover { border-color: #D4CFC8 !important; box-shadow: 0 2px 12px rgba(17,17,17,0.06) !important; }
+      `}</style>
+
+      {/* ── Metrics Row ──────────────────────────────────────────────────────── */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: "12px",
+        padding: "14px 20px", borderBottom: "1px solid #E8E4DE",
+        background: "#FFFFFF", flexShrink: 0, overflowX: "auto",
+        flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", gap: "10px", flex: 1, flexWrap: "wrap" }}>
+          <MetricCard label="Total Clauses" value={result.stats.total} accent="#111111" />
+          <MetricCard label="Substantive Changes" value={aStat.mods} accent="#F47B20" bg="#FFF0E3" />
+          <MetricCard
+            label="High Risk Impact"
+            value={filteredChanges.filter((c) => c.significance === "HIGH").length}
+            accent="#DC2626" bg="#FEF2F2"
+          />
+          <MetricCard label="Added Clauses" value={`+${aStat.adds}`} accent="#16A34A" bg="#F0FDF4" />
+          <MetricCard label="Deleted Clauses" value={`-${aStat.dels}`} accent="#77736D" />
+        </div>
+
+        {/* Sync scrolling toggle */}
+        <label style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          cursor: "pointer", userSelect: "none", flexShrink: 0,
+          padding: "6px 12px", borderRadius: "10px",
+          border: "1px solid #E8E4DE", background: "#FFFFFF",
+        }}>
+          <input
+            type="checkbox"
+            checked={syncScroll}
+            onChange={(e) => setSyncScroll(e.target.checked)}
+            style={{ accentColor: "#F47B20", width: "14px", height: "14px" }}
+          />
+          <span style={{ fontSize: "11px", fontWeight: 600, color: "#77736D", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            Sync Scrolling
+          </span>
+        </label>
       </div>
 
-      {/* 4-Column Layout Workspace */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        
-        {/* Sidebar (List of Changes) */}
-        <aside className="w-[300px] xl:w-[320px] flex-shrink-0 flex flex-col bg-[#0d0d0f] z-20 border-r border-white/10">
-          
-          {/* Sidebar Filter Area */}
-          <div className="p-4 border-b border-white/10 shrink-0 bg-[#0f0f11]">
-             <div className="flex items-center justify-between mb-4">
-               <h3 className="text-sm font-semibold text-white">Detected Changes</h3>
-               {filteredChanges.length > 0 && (
-                 <div className="flex items-center gap-1">
-                   <button onClick={handlePrev} disabled={activeIndex <= 0} className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/10 text-zinc-400 disabled:opacity-30 transition-colors" title="Previous Change">
-                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 18l-6-6 6-6" /></svg>
-                   </button>
-                   <span className="text-[10px] font-mono text-zinc-500 w-10 text-center">
-                     {activeIndex >= 0 ? activeIndex + 1 : 0}/{filteredChanges.length}
-                   </span>
-                   <button onClick={handleNext} disabled={activeIndex === -1 || activeIndex >= filteredChanges.length - 1} className="w-6 h-6 rounded flex items-center justify-center hover:bg-white/10 text-zinc-400 disabled:opacity-30 transition-colors" title="Next Change">
-                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 18l6-6-6-6" /></svg>
-                   </button>
-                 </div>
-               )}
-             </div>
+      {/* ── 4-Column Workspace ────────────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
-             {/* Simple Filters */}
-             <div className="flex flex-wrap gap-1.5">
-               <FilterButton active={filterType === "ALL"} onClick={() => { setFilterType("ALL"); setSelectedChangeId(null); }}>All</FilterButton>
-               <FilterButton active={filterType === "ADDED"} onClick={() => { setFilterType("ADDED"); setSelectedChangeId(null); }} color="emerald">Added</FilterButton>
-               <FilterButton active={filterType === "REMOVED"} onClick={() => { setFilterType("REMOVED"); setSelectedChangeId(null); }} color="rose">Removed</FilterButton>
-               <FilterButton active={filterType === "MODIFIED"} onClick={() => { setFilterType("MODIFIED"); setSelectedChangeId(null); }} color="amber">Modified</FilterButton>
-             </div>
+        {/* ── Detected Changes Panel ─────────────────────────────────────────── */}
+        <aside style={{
+          width: "288px", flexShrink: 0,
+          display: "flex", flexDirection: "column",
+          background: "#FFFFFF", borderRight: "1px solid #E8E4DE",
+          zIndex: 5,
+        }}>
+          {/* Panel header */}
+          <div style={{
+            padding: "16px 16px 12px",
+            borderBottom: "1px solid #E8E4DE",
+            flexShrink: 0,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+              <h3 style={{
+                fontFamily: "'DM Serif Display', 'Playfair Display', Georgia, serif",
+                fontSize: "15px", fontWeight: 400, color: "#111111", margin: 0,
+              }}>
+                Detected Changes
+              </h3>
+              {filteredChanges.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                  <button
+                    onClick={handlePrev} disabled={activeIndex <= 0}
+                    aria-label="Previous change"
+                    style={{
+                      width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E8E4DE",
+                      background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: activeIndex <= 0 ? "not-allowed" : "pointer",
+                      opacity: activeIndex <= 0 ? 0.35 : 1, color: "#77736D",
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                  </button>
+                  <span style={{ fontSize: "10px", color: "#77736D", fontVariantNumeric: "tabular-nums", minWidth: "36px", textAlign: "center" }}>
+                    {activeIndex >= 0 ? activeIndex + 1 : 0}/{filteredChanges.length}
+                  </span>
+                  <button
+                    onClick={handleNext} disabled={activeIndex === -1 || activeIndex >= filteredChanges.length - 1}
+                    aria-label="Next change"
+                    style={{
+                      width: "24px", height: "24px", borderRadius: "6px", border: "1px solid #E8E4DE",
+                      background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center",
+                      cursor: (activeIndex === -1 || activeIndex >= filteredChanges.length - 1) ? "not-allowed" : "pointer",
+                      opacity: (activeIndex === -1 || activeIndex >= filteredChanges.length - 1) ? 0.35 : 1, color: "#77736D",
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Filter pills */}
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {(["ALL", "ADDED", "REMOVED", "MODIFIED"] as const).map((f) => (
+                <FilterPill
+                  key={f}
+                  label={f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
+                  active={filterType === f}
+                  onClick={() => { setFilterType(f); setSelectedChangeId(null); }}
+                  color={f === "ADDED" ? "#16A34A" : f === "REMOVED" ? "#DC2626" : f === "MODIFIED" ? "#F47B20" : undefined}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Change List */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+          {/* Change cards list */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "10px" }}>
             {filteredChanges.length === 0 ? (
-               <p className="text-xs text-zinc-500 text-center p-4">No changes match criteria.</p>
+              <p style={{ fontSize: "12px", color: "#A09A93", textAlign: "center", padding: "24px 16px", lineHeight: 1.5 }}>
+                No changes match the current filter.
+              </p>
             ) : (
               filteredChanges.map((change, idx) => (
-                <SidebarChangeCard 
-                  key={change.id} 
+                <ChangeCard
+                  key={change.id}
                   idx={idx + 1}
-                  change={change} 
-                  isSelected={change.id === selectedChangeId} 
-                  onClick={() => setSelectedChangeId(change.id)} 
+                  change={change}
+                  isSelected={change.id === selectedChangeId}
+                  onClick={() => setSelectedChangeId(change.id)}
                 />
               ))
             )}
           </div>
         </aside>
 
-        {/* Viewers Area */}
-        <div className="flex-1 flex min-w-0">
-           {/* Pane A */}
-           <div 
-             className="flex-1 border-r border-white/10 flex flex-col min-w-0 bg-[#0d0d10]"
-             aria-label="Version A document pane"
-           >
-             <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70 truncate px-4" title={documentAName}>⬅ Version A: {documentAName}</span>
-             </div>
-             <div className="flex-1 relative flex flex-col min-h-0">
-                <DocumentViewer 
-                  documentId={documentAId} 
-                  characterStart={
-                    // ADDED changes don't have Pane A text — don't force a highlight there
-                    activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterStart ?? null) : null
-                  }
-                  characterEnd={
-                    activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterEnd ?? null) : null
-                  }
-                  highlightColor={activeChange?.type === "REMOVED" ? "rose" : "amber"}
-                  onClose={() => setSelectedChangeId(null)}
-                  scrollContainerRef={paneARef}
-                  onScroll={e => handleScroll('A', e)}
-                  onTextLoaded={setLenA}
-                />
-             </div>
-           </div>
+        {/* ── Document Viewers ───────────────────────────────────────────────── */}
+        <div style={{ flex: 1, display: "flex", minWidth: 0 }}>
 
-           {/* Pane B */}
-           <div 
-             className="flex-1 flex flex-col min-w-0 bg-[#0d0d10]"
-             aria-label="Version B document pane"
-           >
-             <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70 truncate px-4" title={documentBName}>Version B: {documentBName} ➡</span>
-             </div>
-             <div className="flex-1 relative flex flex-col min-h-0">
-                <DocumentViewer 
-                  documentId={documentBId} 
-                  characterStart={
-                    // REMOVED changes don't have Pane B text — don't force a highlight there
-                    activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterStart ?? null) : null
-                  }
-                  characterEnd={
-                    activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterEnd ?? null) : null
-                  }
-                  highlightColor={activeChange?.type === "ADDED" ? "emerald" : "amber"}
-                  onClose={() => setSelectedChangeId(null)}
-                  scrollContainerRef={paneBRef}
-                  onScroll={e => handleScroll('B', e)}
-                  onTextLoaded={setLenB}
-                />
-             </div>
-           </div>
+          {/* Pane A */}
+          <div
+            style={{ flex: 1, borderRight: "1px solid #E8E4DE", display: "flex", flexDirection: "column", minWidth: 0 }}
+            aria-label="Version 1 document pane"
+          >
+            <div style={{
+              height: "40px", background: "#FAFAF8", borderBottom: "1px solid #E8E4DE",
+              display: "flex", alignItems: "center", paddingInline: "16px", flexShrink: 0,
+              gap: "8px",
+            }}>
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em",
+                textTransform: "uppercase", color: "#F47B20",
+                background: "#FFF0E3", borderRadius: "5px", padding: "2px 7px",
+              }}>V1</span>
+              <span style={{
+                fontSize: "11px", fontWeight: 600, color: "#77736D",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }} title={documentAName}>
+                {documentAName}
+              </span>
+            </div>
+            <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <DocumentViewer
+                documentId={documentAId}
+                characterStart={activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterStart ?? null) : null}
+                characterEnd={activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterEnd ?? null) : null}
+                highlightColor={activeChange?.type === "REMOVED" ? "rose" : "amber"}
+                onClose={() => setSelectedChangeId(null)}
+                scrollContainerRef={paneARef}
+                onScroll={(e) => handleScroll("A", e)}
+                onTextLoaded={setLenA}
+              />
+            </div>
+          </div>
+
+          {/* Pane B */}
+          <div
+            style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}
+            aria-label="Version 2 document pane"
+          >
+            <div style={{
+              height: "40px", background: "#FAFAF8", borderBottom: "1px solid #E8E4DE",
+              display: "flex", alignItems: "center", paddingInline: "16px", flexShrink: 0,
+              gap: "8px",
+            }}>
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em",
+                textTransform: "uppercase", color: "#1677FF",
+                background: "#EAF3FF", borderRadius: "5px", padding: "2px 7px",
+              }}>V2</span>
+              <span style={{
+                fontSize: "11px", fontWeight: 600, color: "#77736D",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }} title={documentBName}>
+                {documentBName}
+              </span>
+            </div>
+            <div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <DocumentViewer
+                documentId={documentBId}
+                characterStart={activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterStart ?? null) : null}
+                characterEnd={activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterEnd ?? null) : null}
+                highlightColor={activeChange?.type === "ADDED" ? "emerald" : "amber"}
+                onClose={() => setSelectedChangeId(null)}
+                scrollContainerRef={paneBRef}
+                onScroll={(e) => handleScroll("B", e)}
+                onTextLoaded={setLenB}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Right Panel - Comparison Assistant */}
-        <div className="w-[340px] xl:w-[380px] flex-shrink-0 border-l border-white/10 flex flex-col bg-[#111115]">
-          <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-            <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-2">
-              <svg className="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+        {/* ── Comparison Assistant ───────────────────────────────────────────── */}
+        <div style={{
+          width: "340px", flexShrink: 0,
+          borderLeft: "1px solid #E8E4DE",
+          display: "flex", flexDirection: "column",
+          background: "#FFFFFF",
+        }}>
+          <div style={{
+            height: "40px", background: "#FAFAF8", borderBottom: "1px solid #E8E4DE",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            paddingInline: "16px", flexShrink: 0,
+          }}>
+            <span style={{ fontSize: "11px", fontWeight: 600, color: "#111111", letterSpacing: "-0.01em" }}>
               Comparison Assistant
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold border border-white/10 px-1.5 py-0.5 rounded shadow-sm">Dual-Authority</span>
+            <span style={{
+              fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em",
+              textTransform: "uppercase", color: "#77736D",
+              border: "1px solid #E8E4DE", borderRadius: "6px",
+              padding: "2px 7px", background: "#F8F6F2",
+            }}>
+              Dual-Authority
+            </span>
           </div>
-          <div className="flex-1 overflow-hidden relative">
-            <ChatWindow 
-              documentIds={[documentAId, documentBId]} 
-              conversationId={null} 
-              onConversationCreated={() => {}} 
-              documentsMap={{[documentAId]: documentAName, [documentBId]: documentBName}} 
+          <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+            <ChatWindow
+              documentIds={[documentAId, documentBId]}
+              conversationId={null}
+              onConversationCreated={() => {}}
+              documentsMap={{ [documentAId]: documentAName, [documentBId]: documentBName }}
             />
           </div>
         </div>
@@ -498,121 +624,166 @@ export function ComparisonView({
   );
 }
 
-// ──────────────────────────────────────────────────────────────
-// Sidebar Change Card
-// ──────────────────────────────────────────────────────────────
+// ─── Filter Pill ──────────────────────────────────────────────────────────────
 
-function SidebarChangeCard({
-  idx,
-  change,
-  isSelected,
-  onClick,
-}: {
-  idx: number,
-  change: ComparisonChange;
-  isSelected: boolean;
-  onClick: () => void;
-}) {
-  const typeColors: Record<string, string> = {
-    ADDED: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-    REMOVED: "text-rose-400 bg-rose-500/10 border-rose-500/20",
-    MODIFIED: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+function FilterPill({
+  label, active, onClick, color,
+}: { label: string; active: boolean; onClick: () => void; color?: string }) {
+  const activeColor = color || "#111111";
+  return (
+    <button
+      onClick={onClick}
+      className="cmp-filter-btn"
+      style={{
+        padding: "4px 12px", borderRadius: "20px", border: "1.5px solid",
+        fontSize: "11px", fontWeight: 600, cursor: "pointer",
+        background: active ? activeColor : "#FFFFFF",
+        borderColor: active ? activeColor : "#E8E4DE",
+        color: active ? "#FFFFFF" : "#77736D",
+        fontFamily: "inherit",
+        outline: "none",
+        transition: "all 150ms",
+      }}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ─── Change Card ──────────────────────────────────────────────────────────────
+
+function ChangeCard({
+  idx, change, isSelected, onClick,
+}: { idx: number; change: ComparisonChange; isSelected: boolean; onClick: () => void }) {
+  const typeStyle: Record<string, { bg: string; color: string }> = {
+    ADDED:    { bg: "#F0FDF4", color: "#16A34A" },
+    REMOVED:  { bg: "#FEF2F2", color: "#DC2626" },
+    MODIFIED: { bg: "#FFF0E3", color: "#F47B20" },
+  };
+  const sigStyle: Record<string, { bg: string; color: string }> = {
+    HIGH:   { bg: "#FEF2F2", color: "#DC2626" },
+    MEDIUM: { bg: "#FFF0E3", color: "#F47B20" },
+    LOW:    { bg: "#F8F6F2", color: "#77736D" },
   };
 
-  const sigColors: Record<string, string> = {
-    HIGH: "text-red-400 bg-red-500/10 border-red-500/20",
-    MEDIUM: "text-orange-400 bg-orange-500/10 border-orange-500/20",
-    LOW: "text-slate-400 bg-slate-500/10 border-slate-500/20",
-  };
+  const ts = typeStyle[change.type] || typeStyle.MODIFIED;
+  const ss = sigStyle[change.significance] || sigStyle.LOW;
 
-  // Preview text is AI explanation if available, otherwise raw diff or slice
-  const previewText = change.aiExplanation || change.beforeText?.slice(0, 100) || change.afterText?.slice(0, 100) || "";
+  const previewText =
+    change.aiExplanation || change.beforeText?.slice(0, 110) || change.afterText?.slice(0, 110) || "";
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left p-3 rounded-lg border transition-all duration-200 outline-none focus-visible:ring-2 ring-blue-500 group ${
-        isSelected 
-          ? "bg-blue-500/5- border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)] bg-[#1a1a24]" 
-          : "bg-[#16161a] border-white/5 hover:border-white/15 hover:bg-[#1c1c20]"
-      }`}
+      className="cmp-change-card"
+      style={{
+        width: "100%", textAlign: "left",
+        padding: "12px", borderRadius: "12px",
+        border: `1.5px solid ${isSelected ? "#F47B20" : "#E8E4DE"}`,
+        background: isSelected ? "#FFF9F5" : "#FFFFFF",
+        boxShadow: isSelected ? "0 0 0 3px rgba(244,123,32,0.08)" : "none",
+        cursor: "pointer", marginBottom: "8px",
+        outline: "none", fontFamily: "inherit",
+        display: "block",
+      }}
+      aria-pressed={isSelected}
     >
-      <div className="flex items-center justify-between mb-2 gap-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-mono text-zinc-500 mr-1">#{String(idx).padStart(2,'0')}</span>
-          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider flex-shrink-0 border ${typeColors[change.type]}`}>
-            {change.type}
-          </span>
-          <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider flex-shrink-0 border ${sigColors[change.significance]}`}>
-            {change.significance}
-          </span>
-        </div>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "9px", color: "#A09A93", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+          #{String(idx).padStart(2, "0")}
+        </span>
+        <span style={{
+          fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "2px 7px", borderRadius: "5px",
+          background: ts.bg, color: ts.color,
+        }}>
+          {change.type}
+        </span>
+        <span style={{
+          fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+          padding: "2px 7px", borderRadius: "5px",
+          background: ss.bg, color: ss.color,
+        }}>
+          {change.significance}
+        </span>
       </div>
-      
-      <p className={`text-xs leading-relaxed line-clamp-3 mb-2 min-w-0 ${isSelected ? 'text-zinc-200' : 'text-zinc-400'}`}>
+
+      {/* Preview */}
+      <p style={{
+        fontSize: "12px", color: isSelected ? "#111111" : "#5A5551",
+        lineHeight: 1.55, margin: "0 0 8px",
+        display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+        overflow: "hidden",
+      }}>
         {previewText}
       </p>
 
-      {/* Special Markers */}
-      <div className="flex items-center gap-1.5 flex-wrap font-mono text-[9px] uppercase tracking-wider font-bold">
-        {change.moneyChanges.length > 0 && <span className="text-yellow-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span> Money</span>}
-        {change.dateChanges.length > 0 && <span className="text-purple-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span> Date</span>}
-        {change.numberChanges.length > 0 && <span className="text-cyan-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Number</span>}
+      {/* Markers */}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {change.moneyChanges.length > 0 && (
+          <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#92400E", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#D97706" }} />
+            Money
+          </span>
+        )}
+        {change.dateChanges.length > 0 && (
+          <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B21A8", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#7C3AED" }} />
+            Date
+          </span>
+        )}
+        {change.numberChanges.length > 0 && (
+          <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#0E5B8E", display: "flex", alignItems: "center", gap: "4px" }}>
+            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#1677FF" }} />
+            Number
+          </span>
+        )}
       </div>
 
+      {/* Token-level diff (expanded when selected) */}
       {isSelected && change.tokenDiff.length > 0 && (
-         <div className="mt-3 pt-3 border-t border-white/10 text-[10px] font-mono leading-relaxed break-words bg-black/20 p-2 rounded max-h-32 overflow-y-auto" aria-label="Token-level diff">
-            {change.tokenDiff.map((tok, i) => {
-              if (tok.op === "equal") return <span key={i} className="text-zinc-500">{tok.text}</span>;
-              if (tok.op === "delete") return <del key={i} className="bg-rose-900/40 text-rose-300 line-through decoration-rose-400" title="Removed">{tok.text}</del>;
-              return <ins key={i} className="bg-emerald-900/40 text-emerald-300 underline decoration-emerald-400 not-italic" title="Added">{tok.text}</ins>;
-            })}
-         </div>
+        <div style={{
+          marginTop: "10px", paddingTop: "10px",
+          borderTop: "1px solid #F0ECE6",
+          fontSize: "10px", fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+          lineHeight: 1.6, background: "#F8F6F2",
+          borderRadius: "8px", padding: "8px 10px",
+          maxHeight: "100px", overflowY: "auto",
+          wordBreak: "break-word",
+        }}>
+          {change.tokenDiff.map((tok, i) => {
+            if (tok.op === "equal") return <span key={i} style={{ color: "#77736D" }}>{tok.text}</span>;
+            if (tok.op === "delete") return <del key={i} style={{ background: "rgba(220,38,38,0.12)", color: "#DC2626", textDecoration: "line-through" }}>{tok.text}</del>;
+            return <ins key={i} style={{ background: "rgba(22,163,74,0.12)", color: "#16A34A", textDecoration: "none" }}>{tok.text}</ins>;
+          })}
+        </div>
       )}
     </button>
   );
 }
 
-// ──────────────────────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────────────────────
+// ─── Metric Card ──────────────────────────────────────────────────────────────
 
-function FilterButton({
-  active,
-  onClick,
-  color,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  color?: string;
-  children: React.ReactNode;
-}) {
-  const activeColors: Record<string, string> = {
-    emerald: "bg-emerald-500/20 border-emerald-500/40 text-emerald-300",
-    rose: "bg-rose-500/20 border-rose-500/40 text-rose-300",
-    amber: "bg-amber-500/20 border-amber-500/40 text-amber-300",
-  };
-
-  const activeStyle = active
-    ? (color ? activeColors[color] : "bg-white/10 border-white/30 text-white")
-    : "bg-transparent border-white/5 text-zinc-500 hover:text-zinc-300 hover:border-white/20 hover:bg-white/5";
-
+function MetricCard({
+  label, value, accent, bg,
+}: { label: string; value: string | number; accent: string; bg?: string }) {
   return (
-    <button
-      onClick={onClick}
-      className={`px-2 py-1 rounded border text-[10px] font-medium transition-all ${activeStyle}`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function MetricCard({ label, value, color, borderClr }: { label: string, value: string | number, color: string, borderClr: string }) {
-  return (
-    <div className={`flex flex-col flex-1 min-w-[140px] px-4 py-3 bg-[#16161a] border ${borderClr} rounded-xl shadow-sm`}>
-      <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{label}</span>
-      <span className={`text-xl font-bold ${color}`}>{value}</span>
+    <div style={{
+      display: "flex", flexDirection: "column",
+      padding: "8px 14px",
+      background: bg || "#F8F6F2",
+      border: "1px solid #E8E4DE",
+      borderRadius: "12px",
+      minWidth: "110px", flex: "1 1 auto",
+    }}>
+      <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#A09A93", marginBottom: "3px" }}>
+        {label}
+      </span>
+      <span style={{ fontSize: "20px", fontWeight: 700, color: accent, letterSpacing: "-0.02em", lineHeight: 1 }}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -156,7 +156,7 @@ function NavLink({
 export function GlobalSidebar() {
   const pathname = usePathname();
 
-  // Hide the global sidebar entirely on document detail pages for a focused workspace
+  // Hide the global sidebar on document detail pages for a focused workspace
   if (pathname?.startsWith('/documents/')) {
     return null;
   }
@@ -246,12 +246,7 @@ export function GlobalSidebar() {
           icon={<IconCompare />}
           active={pathname === "/compare"}
         />
-        <NavLink
-          href="/history"
-          label="Chat History"
-          icon={<IconHistory />}
-          active={pathname === "/history"}
-        />
+
 
         {/* Divider */}
         <div
