@@ -7,7 +7,6 @@ interface UploadButtonProps {
   children?: React.ReactNode;
   className?: string;
   onUploadStart?: () => void;
-  /** Called when upload + processing succeeds. Receives the new documentId. */
   onUploadSuccess?: (documentId: string) => void;
   onUploadError?: (message: string) => void;
 }
@@ -73,34 +72,90 @@ export function UploadButton({
       onUploadError?.(msg);
     }
 
-    // Reset so same file can be uploaded again
     if (inputRef.current) {
       inputRef.current.value = "";
     }
   };
 
   return (
-    <div className="flex flex-col gap-2 w-full items-center">
+    <>
       <input
         type="file"
         ref={inputRef}
         onChange={handleFileChange}
-        className="hidden"
+        style={{ display: "none" }}
         accept=".pdf,.docx,.txt"
+        aria-label="Upload a legal document"
       />
       <button
         onClick={() => inputRef.current?.click()}
         disabled={status === "uploading"}
         className={className}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          margin: 0,
+          cursor: status === "uploading" ? "not-allowed" : "pointer",
+          opacity: status === "uploading" ? 0.7 : 1,
+          display: "inline-block",
+        }}
+        aria-label="Upload document"
       >
-        {status === "uploading" ? "Processing..." : children}
+        {status === "uploading" ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0",
+              background: "#111111",
+              borderRadius: "34px",
+              padding: "0 8px 0 8px",
+              height: "68px",
+              width: "290px",
+              opacity: 0.7,
+            }}
+          >
+            <div
+              style={{
+                width: "50px",
+                height: "50px",
+                borderRadius: "50%",
+                background: "#F47B20",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  border: "2px solid white",
+                  borderTopColor: "transparent",
+                  borderRadius: "50%",
+                  animation: "spin 0.7s linear infinite",
+                }}
+              />
+            </div>
+            <span
+              style={{
+                flex: 1,
+                textAlign: "center",
+                fontSize: "15px",
+                fontWeight: 600,
+                color: "#FFFFFF",
+              }}
+            >
+              Processing...
+            </span>
+          </div>
+        ) : (
+          children
+        )}
       </button>
-
-      {status === "failed" && errorMsg && (
-        <div className="text-red-400 text-xs text-center border border-red-500/20 bg-red-500/10 p-2 rounded w-full">
-          {errorMsg}
-        </div>
-      )}
-    </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </>
   );
 }

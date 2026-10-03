@@ -8,7 +8,6 @@ export function DocumentDeleteButton({
   onDeleted,
 }: {
   documentId: string;
-  /** Called after successful deletion so the parent can update its list */
   onDeleted?: () => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -20,7 +19,6 @@ export function DocumentDeleteButton({
 
     if (!confirm) {
       setConfirm(true);
-      // Auto-dismiss confirm after 3 seconds
       setTimeout(() => setConfirm(false), 3000);
       return;
     }
@@ -37,7 +35,15 @@ export function DocumentDeleteButton({
 
   if (isDeleting) {
     return (
-      <span className="text-xs text-zinc-600 font-mono px-2">deleting…</span>
+      <div
+        style={{
+          padding: "10px 16px",
+          fontSize: "13px",
+          color: "#77736D",
+        }}
+      >
+        Deleting…
+      </div>
     );
   }
 
@@ -45,10 +51,22 @@ export function DocumentDeleteButton({
     return (
       <button
         onClick={handleDelete}
-        className="text-[10px] font-bold text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded transition-colors animate-pulse"
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: "left",
+          padding: "10px 16px",
+          fontSize: "13px",
+          fontWeight: 600,
+          color: "#E53935",
+          background: "#FDECEA",
+          border: "none",
+          cursor: "pointer",
+          animation: "pulse 1s infinite",
+        }}
         title="Click again to confirm deletion"
       >
-        Confirm?
+        Confirm delete?
       </button>
     );
   }
@@ -56,25 +74,31 @@ export function DocumentDeleteButton({
   return (
     <button
       disabled={isDeleting}
-      className="text-slate-500 hover:text-red-500 transition-colors p-1 rounded"
-      title="Delete document"
       onClick={handleDelete}
+      title="Delete document"
+      style={{
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        padding: "10px 16px",
+        fontSize: "13px",
+        fontWeight: 500,
+        color: "#5E5A54",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        transition: "background 150ms, color 150ms",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.background = "#FDECEA";
+        (e.currentTarget as HTMLElement).style.color = "#E53935";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = "transparent";
+        (e.currentTarget as HTMLElement).style.color = "#5E5A54";
+      }}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 6h18" />
-        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-      </svg>
+      Delete
     </button>
   );
 }

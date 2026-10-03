@@ -1,24 +1,80 @@
 @import "tailwindcss";
 
-@theme {
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1e293b;
-  --color-slate-900: #0f172a;
+/* ─── Design Tokens ──────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-main: #F8F6F2;
+  --bg-white: #FFFFFF;
+  --bg-sidebar: #0D0D0D;
+  --bg-secondary: #1A1A1A;
+
+  /* Brand */
+  --color-primary: #111111;
+  --color-orange: #F47B20;
+  --color-orange-bright: #FF8A24;
+  --color-orange-soft: #FFF0E3;
+
+  /* Text */
+  --text-primary: #111111;
+  --text-secondary: #5E5A54;
+  --text-muted: #77736D;
+
+  /* Borders */
+  --border-color: #E8E4DE;
+
+  /* Status */
+  --color-success: #16A34A;
+  --color-success-bg: #EAF8EF;
+  --color-doc-blue: #1677FF;
+  --color-doc-blue-bg: #EAF3FF;
 }
 
-:root {
-  --background: #f8fafc; /* slate-50 */
-  --foreground: #0f172a; /* slate-900 */
+/* ─── Base Reset ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Font Utilities ─────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-dm-serif), 'DM Serif Display', Georgia, serif;
+}
+
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #E8E4DE;
+  border-radius: 99px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d4cfc8;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 99px;
 }

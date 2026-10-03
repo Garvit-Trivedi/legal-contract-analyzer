@@ -82,12 +82,10 @@ export async function processUploadedDocument(formData: FormData) {
 
     try { revalidatePath("/"); } catch(e) {}
     
-    // Fire indexing process
-    try {
-      await indexDocument(initalDoc.id);
-    } catch (indexErr) {
+    // Fire indexing process asynchronously without waiting
+    indexDocument(initalDoc.id).catch((indexErr) => {
       console.error("Indexing failed for document", initalDoc.id, indexErr);
-    }
+    });
 
     return { success: true, documentId: initalDoc.id };
   } catch (err: any) {
