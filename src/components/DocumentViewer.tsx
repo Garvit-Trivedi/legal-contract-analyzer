@@ -42,6 +42,10 @@ export function DocumentViewer({
         setText(fullText);
         if (onTextLoaded) onTextLoaded(fullText.length);
         setLoading(false);
+      }).catch(err => {
+        console.error("Failed to load document text:", err);
+        setText("Error loading document text from server. Please check your connection.");
+        setLoading(false);
       });
     }
   }, [documentId, onTextLoaded]);
