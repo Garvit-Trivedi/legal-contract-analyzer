@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ComparisonResult, ComparisonChange, ChangeSignificanceV2 } from "@/types/comparison";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { ChatWindow } from "@/components/ChatWindow";
 
 export function ComparisonView({
   documentAId,
@@ -152,35 +153,20 @@ export function ComparisonView({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 w-full bg-[#09090b] text-zinc-300">
-      {/* Top Header */}
-      <header className="h-14 border-b border-white/10 shrink-0 flex items-center px-4 bg-[#111113] justify-between">
-        <div className="flex items-center gap-6 text-sm font-mono text-slate-400">
-          <span className="text-white font-semibold font-sans tracking-tight">Comparison Workspace</span>
-          
-          <div className="flex items-center gap-4 border-l border-white/10 pl-6">
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500"></div> 
-              <span className="truncate max-w-[200px]" title={documentAName}>A: {documentAName}</span>
-            </span>
-            <span className="text-zinc-600">vs</span>
-            <span className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div> 
-              <span className="truncate max-w-[200px]" title={documentBName}>B: {documentBName}</span>
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex flex-col items-end text-xs font-mono">
-          <span className="text-zinc-400"><span className="text-emerald-400">+{aStat.adds}</span> / <span className="text-rose-400">-{aStat.dels}</span> / <span className="text-amber-400">~{aStat.mods}</span></span>
-          <span className="text-zinc-500">{result.stats.total} total changes detected</span>
-        </div>
-      </header>
+      {/* Metrics Row */}
+      <div className="flex gap-4 p-5 border-b border-white/10 shrink-0 bg-[#0b0b0e] overflow-x-auto custom-scrollbar">
+         <MetricCard label="TOTAL CLAUSES" value={result.stats.total} color="text-white" borderClr="border-white/10" />
+         <MetricCard label="SUBSTANTIVE CHANGES" value={aStat.mods} color="text-amber-500" borderClr="border-amber-500/20" />
+         <MetricCard label="HIGH RISK IMPACT" value={filteredChanges.filter(c => c.significance === 'HIGH').length} color="text-red-500" borderClr="border-red-500/20" />
+         <MetricCard label="ADDED CLAUSES" value={`+${aStat.adds}`} color="text-emerald-500" borderClr="border-emerald-500/20" />
+         <MetricCard label="DELETED CLAUSES" value={`-${aStat.dels}`} color="text-slate-400" borderClr="border-slate-500/20" />
+      </div>
 
-      {/* 3-Column Layout Workspace */}
+      {/* 4-Column Layout Workspace */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         
         {/* Sidebar (List of Changes) */}
-        <aside className="w-[360px] flex-shrink-0 border-r border-white/10 flex flex-col bg-[#0d0d0f] z-20">
+        <aside className="w-[300px] xl:w-[320px] flex-shrink-0 flex flex-col bg-[#0d0d0f] z-20 border-r border-white/10">
           
           {/* Sidebar Filter Area */}
           <div className="p-4 border-b border-white/10 shrink-0 bg-[#0f0f11]">
@@ -232,8 +218,8 @@ export function ComparisonView({
         <div className="flex-1 flex min-w-0">
            {/* Pane A */}
            <div className="flex-1 border-r border-white/10 flex flex-col min-w-0">
-             <div className="h-8 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70">Version A</span>
+             <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
+               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-emerald-500/70 truncate px-4" title={documentAName}>Version A: {documentAName}</span>
              </div>
              <div className="flex-1 relative flex flex-col min-h-0">
                 <DocumentViewer 
@@ -248,8 +234,8 @@ export function ComparisonView({
 
            {/* Pane B */}
            <div className="flex-1 flex flex-col min-w-0">
-             <div className="h-8 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
-               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70">Version B</span>
+             <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-center shrink-0">
+               <span className="text-[10px] font-mono tracking-widest uppercase font-bold text-blue-500/70 truncate px-4" title={documentBName}>Version B: {documentBName}</span>
              </div>
              <div className="flex-1 relative flex flex-col min-h-0">
                 <DocumentViewer 
@@ -263,6 +249,24 @@ export function ComparisonView({
            </div>
         </div>
 
+        {/* Right Panel - Comparison Assistant */}
+        <div className="w-[340px] xl:w-[380px] flex-shrink-0 border-l border-white/10 flex flex-col bg-[#111115]">
+          <div className="h-11 bg-[#16161a] border-b border-white/5 flex items-center justify-between px-4 shrink-0">
+            <span className="text-[11px] font-bold text-zinc-300 flex items-center gap-2">
+              <svg className="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
+              Comparison Assistant
+            </span>
+            <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold border border-white/10 px-1.5 py-0.5 rounded shadow-sm">Dual-Authority</span>
+          </div>
+          <div className="flex-1 overflow-hidden relative">
+            <ChatWindow 
+              documentIds={[documentAId, documentBId]} 
+              conversationId={null} 
+              onConversationCreated={() => {}} 
+              documentsMap={{[documentAId]: documentAName, [documentBId]: documentBName}} 
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -375,5 +379,14 @@ function FilterButton({
     >
       {children}
     </button>
+  );
+}
+
+function MetricCard({ label, value, color, borderClr }: { label: string, value: string | number, color: string, borderClr: string }) {
+  return (
+    <div className={`flex flex-col flex-1 min-w-[140px] px-4 py-3 bg-[#16161a] border ${borderClr} rounded-xl shadow-sm`}>
+      <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">{label}</span>
+      <span className={`text-xl font-bold ${color}`}>{value}</span>
+    </div>
   );
 }
