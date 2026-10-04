@@ -236,31 +236,48 @@ This application lacks authentication (Auth0 / NextAuth) and Multi-Tenant RLS is
 
 ---
 
-## 11. Local Development 
+## 11. Local Development (How to Run Locally)
 
-**Prerequisites:** Node.js v18+, a live Postgres database instance with `pgvector` unlocked, and a Google AI Studio Key.
+Follow these exact steps to run the application on your local machine:
 
-**Installation & Execution:**
+**Step 1: Prerequisites**
+Make sure you have the following ready:
+- **Node.js** (v18 or higher)
+- A live **PostgreSQL** database with the `pgvector` extension enabled (e.g., Supabase)
+- A **Google Gemini API Key** (from Google AI Studio)
+
+**Step 2: Clone the Repository and Install Dependencies**
 ```bash
-git clone ...
+git clone https://github.com/your-repository/legal-contract-analyzer.git
 cd legal-contract-analyzer
-
 npm install
-
-# Push relational and vector schema
-npx drizzle-kit push
-
-# Start the Turbo server
-npm run dev
 ```
 
-### Environment Variables (.env.local)
+**Step 3: Set up Environment Variables**
+Create a new file named `.env.local` in the root of the project and add your secure keys:
+```env
+# Supabase connection string executing drizzle/pgvector bindings
+DATABASE_URL="your_postgres_db_connection_string"
 
-| Variable | Required | Purpose | Exposure |
-|---|---|---|---|
-| `DATABASE_URL` | Yes | Supabase connection string executing drizzle/pgvector bindings. | SERVER ONLY |
-| `GEMINI_API_KEY` | Yes | Token authenticating requests to Google AI infrastructure. | SERVER ONLY |
-| `GEMINI_MODEL` | Yes | Default defined as `gemini-flash-lite-latest` in codebase constants. | SERVER ONLY |
+# Token authenticating requests to Google AI infrastructure
+GEMINI_API_KEY="your_google_ai_studio_api_key"
+
+# (Optional) Defaults to gemini-flash-lite-latest in codebase if not provided
+GEMINI_MODEL="gemini-flash-lite-latest"
+```
+
+**Step 4: Push the Database Schema**
+Run this command to push all relational tables and vector schemas straight to your Postgres database:
+```bash
+npx drizzle-kit push
+```
+
+**Step 5: Start the Development Server**
+Launch the local Next.js server:
+```bash
+npm run dev
+```
+Open `http://localhost:3000` in your browser to start using the application!
 
 ---
 
