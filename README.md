@@ -14,6 +14,16 @@ An AI-powered legal-document analysis application providing zero-hallucination s
 
 ---
 
+## 📚 Documentation
+All detailed documentation for this project is located in the `/docs` folder:
+- **`evaluator_notes.md`**: Evaluation context covering quotation architecture, large file limits, Part C Redlining logic, and future goals.
+- **`ARCHITECTURE.md`**: High-level system design, sequence diagrams, and architecture flows.
+- **`CODEBASE_MAP.md`**: Breakdown of key directories and codebase structure.
+- **`PROJECT_GUIDE.md`**: Deep dive into project milestones and implementation paths.
+- **`LIMITATIONS.md`**: Known bounds and technical constraints of the current iteration.
+
+---
+
 ## 1. Product Overview
 
 ContractAI is an intelligent document processing engine tailored specifically for legal and compliance professionals who require absolute certainty in AI-generated analysis. 

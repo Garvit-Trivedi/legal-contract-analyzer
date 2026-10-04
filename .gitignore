@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# User-requested ignored files
+STEP_13_REDLINING_AUDIT.md
