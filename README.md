@@ -10,7 +10,9 @@ An AI-powered legal-document analysis application providing zero-hallucination s
 ![Gemini Flash](https://img.shields.io/badge/Gemini_Flash-Lite-8E75B2?logo=google&logoColor=white)
 ![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-Verified-C5F74F?logo=drizzle&logoColor=black)
 
-**[View Deployed Application](https://legal-contract-analyzer-one.vercel.app/)**
+**[View Deployed Application](https://legal-contract-analyzer-one.vercel.app/)** | **[Watch Demo Video](https://youtu.be/-qrH07GrhXs?si=O7cdQ6NO-rbtD0KA)**
+
+> **Note on UI:** The user interface is functional and actively working, though you may encounter some places where it does not work properly as features are continuously being refined.
 
 ---
 
