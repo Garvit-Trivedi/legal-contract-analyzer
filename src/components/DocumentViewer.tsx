@@ -7,9 +7,10 @@ interface DocumentViewerProps {
   documentId: string;
   characterStart?: number | null;
   characterEnd?: number | null;
+  changedSegments?: { start: number, end: number }[];
   onClose?: () => void;
   totalPages?: number | null;
-  highlightColor?: "amber" | "emerald" | "rose";
+  highlightColor?: "amber" | "emerald" | "rose" | "purple";
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
   onTextLoaded?: (textLength: number) => void;
@@ -22,6 +23,7 @@ export function DocumentViewer({
   documentId, 
   characterStart, 
   characterEnd,
+  changedSegments,
   onClose,
   totalPages,
   highlightColor = "amber",
@@ -181,6 +183,8 @@ export function DocumentViewer({
     } else if (highlightColor === "rose") {
       hlBg = "bg-rose-300/70"; hlBorder = "border-rose-600"; hlText = "text-[#881337]";
       textDecoration = "line-through decoration-rose-600 decoration-2";
+    } else if (highlightColor === "purple") {
+      hlBg = "bg-purple-300/70"; hlBorder = "border-purple-600"; hlText = "text-[#4C1D95]";
     }
     const citeClass = `citation-highlight ${hlText} ${hlBg} border-b-[3px] ${hlBorder} rounded-[3px] transition-all px-1 py-0.5 font-semibold ${textDecoration}`;
 
@@ -210,6 +214,29 @@ export function DocumentViewer({
       if (isCite) return [<mark key={`${keyPfx}-cite`} ref={el => { if (el) highlightRef.current = el; }} className={citeClass}>{parts}</mark>];
       return parts;
     };
+
+    if (changedSegments && changedSegments.length > 0) {
+      const parts: React.ReactNode[] = [];
+      let last = 0;
+      for (let i = 0; i < changedSegments.length; i++) {
+        const seg = changedSegments[i];
+        const segStart = seg.start - pageOffset;
+        const segEnd = seg.end - pageOffset;
+        const realStart = Math.max(0, segStart);
+        const realEnd = Math.min(pageText.length, segEnd);
+        if (realStart < realEnd) {
+           if (realStart > last) {
+              parts.push(...withSearchHighlights(pageText.slice(last, realStart), false, `p${i}_pre`));
+           }
+           parts.push(...withSearchHighlights(pageText.slice(realStart, realEnd), true, `p${i}_cite`));
+           last = realEnd;
+        }
+      }
+      if (last < pageText.length) {
+         parts.push(...withSearchHighlights(pageText.slice(last), false, `p_post`));
+      }
+      return <>{parts}</>;
+    }
 
     if (hasCite) {
       return <>
@@ -250,7 +277,7 @@ export function DocumentViewer({
     }
 
     return <>{pageText}</>;
-  }, [getPageText, currentPage, characterStart, characterEnd, highlightColor, searchQuery, searchMatches, currentMatch]);
+  }, [getPageText, currentPage, characterStart, characterEnd, changedSegments, highlightColor, searchQuery, searchMatches, currentMatch]);
 
   // ── Loading skeleton ─────────────────────────────────────────
   if (loading) {
@@ -433,6 +460,8 @@ export function DocumentViewer({
             ? "bg-emerald-50 border-emerald-200 text-emerald-700"
             : highlightColor === "rose"
             ? "bg-rose-50 border-rose-200 text-rose-700"
+            : highlightColor === "purple"
+            ? "bg-purple-50 border-purple-200 text-purple-700"
             : "bg-amber-50 border-amber-200 text-amber-700"
         }`}>
           <div className="flex items-center gap-2">
@@ -443,6 +472,7 @@ export function DocumentViewer({
             {highlightColor === "emerald" && "[+] ADDED"}
             {highlightColor === "rose" && "[-] REMOVED"}
             {highlightColor === "amber" && "[↻] SOURCE"}
+            {highlightColor === "purple" && "[~] MODIFIED"}
           </span>
         </div>
       )}

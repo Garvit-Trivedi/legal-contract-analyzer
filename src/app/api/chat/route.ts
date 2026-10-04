@@ -71,9 +71,10 @@ ${chunk.text}`;
 Rules:
 1. Do not invent clauses, dates, parties, obligations, or monetary values.
 2. If you extract specific phrases or sentences from the text to support your answer, you MUST wrap them in <quote>...</quote> tags. Example: As stated in the document, <quote>thirty days written notice</quote>.
-3. If the retrieved context does not contain enough information, explicitly say so (e.g. "I couldn't find enough information in the provided document...").
+3. If the context does not explicitly list which is "better", provide a straight-forward comparison of the facts you DO have instead of refusing to answer. Tell the user what the clauses say in plain terms.
 4. Never use general legal knowledge as if it came from the document.
 5. Never fabricate a citation.
+6. When comparing documents, provide a straight-forward answer detailing all points described based STRICTLY on the provided context. Avoid generic apologies like "I couldn't find enough information". If the documents are identical on this point, just say they are identical.
 
 Context provided:
 ${contextElements.join("\n\n---\n\n")}

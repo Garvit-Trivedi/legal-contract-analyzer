@@ -43,6 +43,7 @@ Do not ask the user for permission to execute a tool. Execute the tool if you ne
 export async function runAgenticResearch(
   userMessage: string,
   documentIds: string[],
+  docMap: Record<string, string>,
   onEvent: AgentCallback,
   maxRounds = DEFAULT_MAX_ROUNDS,
   maxToolCalls = DEFAULT_MAX_TOOL_CALLS
@@ -60,8 +61,10 @@ export async function runAgenticResearch(
   let toolLimitEmitted = false; // only notify the UI once
   // ─────────────────────────────────────────────────────────────────────────────
 
+  const docInfo = documentIds.map(id => `"${docMap[id] || id}" (ID: ${id})`).join(", ");
   const contextMessage =
-    `I need you to answer my question by investigating the following document IDs: ${documentIds.join(", ")}.\n` +
+    `I need you to answer my question by investigating the following documents: ${docInfo}.\n` +
+    `When mentioning a document in your answer, ALWAYS use its name (e.g. "${docMap[documentIds[0]] || documentIds[0]}"), NEVER the UUID string.\n` +
     `If you cannot find the answer, declare it.\n` +
     `Here is my question: ${userMessage}`;
 

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { conversations, messages as messagesTable, citations as citationsTable, conversationDocuments } from "@/db/schema";
+import { conversations, messages as messagesTable, citations as citationsTable, conversationDocuments, documents } from "@/db/schema";
 import { runAgenticResearch, AgentEvent } from "@/lib/ai/agent/loop";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { verifyQuote } from "@/lib/ai/verification";
 
 export async function POST(req: NextRequest) {
@@ -59,9 +59,15 @@ export async function POST(req: NextRequest) {
           
           let allToolContexts: any[] = [];
           
+          const docs = await db.query.documents.findMany({
+            where: inArray(documents.id, documentIdsToUse)
+          });
+          const docMap = Object.fromEntries(docs.map(d => [d.id, d.filename]));
+          
           const { answer, history, hitLimit } = await runAgenticResearch(
             message,
             documentIdsToUse,
+            docMap,
             (event: AgentEvent) => {
               streamEvent(event);
             },

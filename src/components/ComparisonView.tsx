@@ -188,11 +188,12 @@ export function ComparisonView({
   const paneARef = useRef<HTMLDivElement>(null);
   const paneBRef = useRef<HTMLDivElement>(null);
   const isSyncing = useRef(false);
-  const [syncScroll, setSyncScroll] = useState(true);
+  const [syncScroll, setSyncScroll] = useState(false);
   const [lenA, setLenA] = useState(1);
   const [lenB, setLenB] = useState(1);
 
   const handleScroll = (source: "A" | "B", e: React.UIEvent<HTMLDivElement>) => {
+    return; // Disabled sync scroll permanently
     if (!syncScroll || !result || result.changes.length === 0) return;
     if (isSyncing.current) return;
 
@@ -351,6 +352,38 @@ export function ComparisonView({
   const activeIndex = filteredChanges.findIndex((c) => c.id === selectedChangeId);
   const activeChange = activeIndex >= 0 ? filteredChanges[activeIndex] : null;
 
+  const getHighlightsA = () => {
+    if (!activeChange || activeChange.type === "ADDED" || !activeChange.beforeLocation) return undefined;
+    if (activeChange.type === "REMOVED") return [{ start: activeChange.beforeLocation.characterStart, end: activeChange.beforeLocation.characterEnd }];
+    if (!activeChange.tokenDiff) return undefined;
+    const segs: {start: number, end: number}[] = [];
+    let curr = activeChange.beforeLocation.characterStart;
+    for (const tok of activeChange.tokenDiff) {
+      if (tok.op === "equal") curr += tok.text.length;
+      else if (tok.op === "delete") {
+        segs.push({ start: curr, end: curr + tok.text.length });
+        curr += tok.text.length;
+      }
+    }
+    return segs;
+  };
+
+  const getHighlightsB = () => {
+    if (!activeChange || activeChange.type === "REMOVED" || !activeChange.afterLocation) return undefined;
+    if (activeChange.type === "ADDED") return [{ start: activeChange.afterLocation.characterStart, end: activeChange.afterLocation.characterEnd }];
+    if (!activeChange.tokenDiff) return undefined;
+    const segs: {start: number, end: number}[] = [];
+    let curr = activeChange.afterLocation.characterStart;
+    for (const tok of activeChange.tokenDiff) {
+      if (tok.op === "equal") curr += tok.text.length;
+      else if (tok.op === "insert") {
+        segs.push({ start: curr, end: curr + tok.text.length });
+        curr += tok.text.length;
+      }
+    }
+    return segs;
+  };
+
   const handleNext = () => {
     if (activeIndex < filteredChanges.length - 1) setSelectedChangeId(filteredChanges[activeIndex + 1].id);
   };
@@ -366,7 +399,7 @@ export function ComparisonView({
 
   return (
     <div style={{
-      flex: 1, display: "flex", flexDirection: "column", minHeight: 0, width: "100%",
+      height: "100%", display: "flex", flexDirection: "column", minHeight: 0, width: "100%",
       background: "#F8F6F2", fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       <style>{`
@@ -425,6 +458,7 @@ export function ComparisonView({
           display: "flex", flexDirection: "column",
           background: "#FFFFFF", borderRight: "1px solid #E8E4DE",
           zIndex: 5,
+          minHeight: 0,
         }}>
           {/* Panel header */}
           <div style={{
@@ -540,7 +574,8 @@ export function ComparisonView({
                 documentId={documentAId}
                 characterStart={activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterStart ?? null) : null}
                 characterEnd={activeChange?.type !== "ADDED" ? (activeChange?.beforeLocation?.characterEnd ?? null) : null}
-                highlightColor={activeChange?.type === "REMOVED" ? "rose" : "amber"}
+                changedSegments={getHighlightsA()}
+                highlightColor={activeChange?.type === "REMOVED" ? "rose" : activeChange?.type === "MODIFIED" ? "purple" : "amber"}
                 onClose={() => setSelectedChangeId(null)}
                 scrollContainerRef={paneARef}
                 onScroll={(e) => handleScroll("A", e)}
@@ -576,7 +611,8 @@ export function ComparisonView({
                 documentId={documentBId}
                 characterStart={activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterStart ?? null) : null}
                 characterEnd={activeChange?.type !== "REMOVED" ? (activeChange?.afterLocation?.characterEnd ?? null) : null}
-                highlightColor={activeChange?.type === "ADDED" ? "emerald" : "amber"}
+                changedSegments={getHighlightsB()}
+                highlightColor={activeChange?.type === "ADDED" ? "emerald" : activeChange?.type === "MODIFIED" ? "purple" : "amber"}
                 onClose={() => setSelectedChangeId(null)}
                 scrollContainerRef={paneBRef}
                 onScroll={(e) => handleScroll("B", e)}
