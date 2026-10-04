@@ -194,44 +194,6 @@ export function ComparisonView({
 
   const handleScroll = (source: "A" | "B", e: React.UIEvent<HTMLDivElement>) => {
     return; // Disabled sync scroll permanently
-    if (!syncScroll || !result || result.changes.length === 0) return;
-    if (isSyncing.current) return;
-
-    const A = paneARef.current;
-    const B = paneBRef.current;
-    if (!A || !B) return;
-
-    const sourceEl = source === "A" ? A : B;
-    const targetEl = source === "A" ? B : A;
-    const sourceLen = source === "A" ? lenA : lenB;
-    const targetLen = source === "A" ? lenB : lenA;
-
-    const maxSourceScroll = sourceEl.scrollHeight - sourceEl.clientHeight;
-    if (maxSourceScroll <= 0) return;
-    const sourceRatio = sourceEl.scrollTop / maxSourceScroll;
-    const sourceCharIdx = sourceRatio * (sourceLen || 1);
-
-    let closestChange = null;
-    let minDiff = Infinity;
-    for (const change of result.changes) {
-      const loc = source === "A" ? change.beforeLocation : change.afterLocation;
-      if (!loc) continue;
-      const diff = Math.abs(loc.characterStart - sourceCharIdx);
-      if (diff < minDiff) { minDiff = diff; closestChange = change; }
-    }
-
-    let targetRatio = sourceRatio;
-    if (closestChange) {
-      const targetLoc = source === "A" ? closestChange.afterLocation : closestChange.beforeLocation;
-      if (targetLoc && targetLen > 0) targetRatio = targetLoc.characterStart / targetLen;
-    }
-
-    const maxTargetScroll = targetEl.scrollHeight - targetEl.clientHeight;
-    if (maxTargetScroll <= 0) return;
-
-    isSyncing.current = true;
-    targetEl.scrollTop = targetRatio * maxTargetScroll;
-    requestAnimationFrame(() => { isSyncing.current = false; });
   };
 
   useEffect(() => {
